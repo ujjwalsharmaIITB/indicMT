@@ -65,6 +65,9 @@ A simple web-based interface is included for testing translation models. Below a
 - **English → Hindi**  
   ![English-Hindi](frontend/images/English-Hindi.png)
 
+- **Hindi → English**  
+  ![Hindi-English](frontend/images/Hindi-English.png)
+
 - **English → Tamil**  
   ![English-Tamil](frontend/images/English-Tamil.png)
 
