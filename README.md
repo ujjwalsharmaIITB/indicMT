@@ -8,7 +8,8 @@ This repository provides code and resources for **Multilingual Indic Machine Tra
 
 India is home to a rich and diverse linguistic landscape, with hundreds of languages spoken nationwide. However, many Indic languages remain underrepresented in existing machine translation systems. IndicMT aims to bridge this gap by developing translation models for **10 languages**—English plus nine major Indic languages: Hindi, Bengali, Gujarati, Kannada, Marathi, Punjabi, Sanskrit, Tamil, and Urdu.
 
-The initial phase centers on **English-centric bilingual models**, training English-to-Indic and Indic-to-English pairs. This strategy leverages the relatively abundant parallel data involving English, forming a solid foundation for building more complex multilingual and Indic-to-Indic translation systems.
+The initial phase focuses on an **English-centric multilingual model** that jointly trains English-to-Indic and Indic-to-English translation pairs within a single unified model. This approach leverages the comparatively abundant English-Indic parallel data and establishes a robust foundation for developing more advanced multilingual and direct Indic-to-Indic translation systems.
+
 
 A key objective is to create **smaller, faster, and more affordable models** that can be deployed on commodity hardware, including CPUs, removing the barrier of requiring expensive GPUs and thereby broadening accessibility.
 
