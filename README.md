@@ -40,7 +40,7 @@ The training and evaluation datasets primarily come from the **BPCC** corpus—a
 
 ## Training Details
 
-- Initial training is conducted on bilingual English-to-Indic and Indic-to-English language pairs.  
+- Initial training is conducted on a single multilingual model having English-to-Indic and Indic-to-English language pairs.  
 - The OpenNMT-py framework powers all model training and inference.  
 - LaBSE-based filtering (≥ 0.85 similarity) is applied wherever applicable to maintain dataset quality by ensuring strong sentence alignment.
 
@@ -74,7 +74,7 @@ A simple web-based interface is included for testing translation models. Below a
 - **Hindi → Marathi**  
   ![Hindi-Marathi](frontend/images/Hindi-Marathi.png)
 
-*Note: These examples were generated using a model trained for 160k steps (approximately 3/5 of one epoch).*
+*Note: These examples were generated using a model trained for 240k steps (approximately 1.2 epoch).*
 
 ---
 
