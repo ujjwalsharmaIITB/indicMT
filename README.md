@@ -83,4 +83,3 @@ This is an ongoing effort to democratize Indic language translation by building 
 
 ---
 
-Contributions, feedback, and issue reports are welcome to help enhance IndicMT!
