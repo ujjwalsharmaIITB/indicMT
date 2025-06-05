@@ -68,7 +68,7 @@ def translate(sentence, source_language, target_language):
     if source_language.lower() == "english":
         return translate_en_xx_en(sentence, target_language)
     elif target_language.lower() == "english":
-        return translate_en_xx_en(sentence, source_language)
+        return translate_en_xx_en(sentence, target_language)
     else:
         return translate_indic_indic(sentence, target_language)
 

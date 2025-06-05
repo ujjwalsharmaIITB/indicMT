@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-
+# Define language lists
 source_languages = [
     'English',
     'Hindi', 
@@ -12,7 +12,8 @@ source_languages = [
     'Punjabi', 
     'Sanskrit', 
     'Tamil', 
-    'Urdu']
+    'Urdu'
+]
 
 target_languages = [
     'Hindi',
@@ -24,46 +25,57 @@ target_languages = [
     'Punjabi', 
     'Sanskrit', 
     'Tamil', 
-    'Urdu']
-st.title("Machine Translation Demo")
+    'Urdu'
+]
 
+st.set_page_config(page_title="Indic MT")
 
+# Centered title with Indian flag
+st.markdown(
+    "<h1 style='text-align: center;'> IndicMT Translation App </h1>",
+    unsafe_allow_html=True
+)
+
+# Load the translation function (cached)
 @st.cache_resource
 def load_translate():
     from generate_translations import translate
     return translate
-    
-
 
 translate = load_translate()
-
 translated_sentence = None
 
-# Inline input layout
-col1, col2, col3 = st.columns([1, 1, 3])
-
+# Language selectors
+col1, col2 = st.columns([1, 1])
 with col1:
     source_lang = st.selectbox("Source Language", source_languages, index=0)
-
 with col2:
     target_lang = st.selectbox("Target Language", target_languages, index=0)
 
-with col3:
-    input_sentence = st.text_input("Enter text to translate and click Translate.")
-
-# Initialize translation state
-if "translation" not in st.session_state:
-    st.session_state.translation = ""
+# Input area
+input_sentence = st.text_area("Enter text to translate:", height=68)
 
 # Dynamic button label
 button_label = f"Translate {source_lang} → {target_lang}"
 
-# Translate button and API call
-if st.button(button_label) and input_sentence.strip():
+# Centered button
+col_btn = st.columns([2, 1, 2])
+with col_btn[1]:
+    if st.button(button_label) and input_sentence.strip():
+        translated_sentence = translate(input_sentence, source_lang, target_lang)
 
-    translated_sentence = translate(input_sentence, source_lang, target_lang)
-    
-    # try:
+# Show translation
+translation = translated_sentence if translated_sentence else ""
+# Show translation in larger font using styled HTML
+if translated_sentence:
+    st.write(f"<div style='text-align: center; font-size: 24px; font-weight: bold; color: #FFF;'>{translated_sentence}</div>", unsafe_allow_html=True)
+
+
+
+
+# Added example for API Call
+
+# try:
     #     response = requests.post(
     #         "https://api.example.com/translate",
     #         json={
@@ -78,9 +90,3 @@ if st.button(button_label) and input_sentence.strip():
     #     st.session_state.translation = data.get("translation", "No translation found.")
     # except requests.exceptions.RequestException as e:
     #     st.session_state.translation = f"API request failed: {e}"
-
-
-# Output translation
-translation = translated_sentence if translated_sentence else ""
-
-st.markdown(f"**{translation}**")
