@@ -3,7 +3,7 @@ onmt_build_vocab -n_sample -1 -config
 
 ## Training 
 
-CUDA_VISIBLE_DEVICES=0,3,4,5 onmt_train  -gpu_ranks 0 -config 
+CUDA_VISIBLE_DEVICES=0,3,4,5 onmt_train -config 
 
 
 ## Inferece
