@@ -48,6 +48,10 @@ The training and evaluation datasets primarily come from the **BPCC** corpus—a
 
 The training process was carried out using a multi-GPU setup with 4 GeForce RTX 2080 Ti GPUs, enabling parallel processing to handle the extensive computational requirements of training the multilingual model. The training spanned 5 days, during which the GPUs played a crucial role in accelerating performance and optimizing resource usage.
 
+#### Model Size 
+- Number of parameters: 79.2M
+
+
 Below is a sample of the GPU utilization during the training process:
 
 ![Training GPU Util](<frontend/images/GPU Util.png>)
@@ -85,7 +89,7 @@ A simple web-based interface is included for testing translation models. Below a
 - **Hindi → Marathi**  
   ![Hindi-Marathi](frontend/images/Hindi-Marathi.png)
 
-*Note: These examples were generated using a model trained for 240k steps (approximately 1.2 epoch).*
+*Note: These examples were generated using a model trained for 240k steps (approximately 1.2 epochs).*
 
 ---
 
