@@ -48,8 +48,15 @@ The training and evaluation datasets primarily come from the **BPCC** corpus—a
 
 The training process was carried out using a multi-GPU setup with 4 GeForce RTX 2080 Ti GPUs, enabling parallel processing to handle the extensive computational requirements of training the multilingual model. The training spanned 5 days, during which the GPUs played a crucial role in accelerating performance and optimizing resource usage.
 
-#### Model Size 
-- Number of parameters: 79.2M
+### Model Information
+
+#### 📦 Model Size
+- **Number of Parameters:** 79.2 million
+
+#### 🔗 Download
+You can download the CTranslate2-converted model from the following link:
+
+[📥 Download Model](https://drive.google.com/drive/folders/1RaeZejfRaVzpsjHlM-pNAPji7v7xrwgJ?usp=sharing)
 
 
 Below is a sample of the GPU utilization during the training process:
