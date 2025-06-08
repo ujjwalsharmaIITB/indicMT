@@ -44,6 +44,14 @@ The training and evaluation datasets primarily come from the **BPCC** corpus—a
 - The OpenNMT-py framework powers all model training and inference.  
 - LaBSE-based filtering (≥ 0.85 similarity) is applied wherever applicable to maintain dataset quality by ensuring strong sentence alignment.
 
+### Training Environment
+
+The training process was carried out using a multi-GPU setup with 4 GeForce RTX 2080 Ti GPUs, enabling parallel processing to handle the extensive computational requirements of training the multilingual model. The training spanned 5 days, during which the GPUs played a crucial role in accelerating performance and optimizing resource usage.
+
+Below is a sample of the GPU utilization during the training process:
+
+![Training GPU Util](<frontend/images/GPU Util.png>)
+
 ---
 
 ## Indic-to-Indic Translation
