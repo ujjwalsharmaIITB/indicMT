@@ -50,18 +50,19 @@ The training process was carried out using a multi-GPU setup with 4 GeForce RTX 
 
 ### Model Information
 
-#### 📦 Model Size
-- **Number of Parameters:** 79.2 million
+#### 📦 Model Configuration
 
-#### 🔗 Download
+- **Number of Parameters:** 79.2 million  
+- **Parallel Data:** 98.7 million sentence pairs  
+- **Training Duration:** Parallel training for over 5 days  
+- **GPU Utilization Sample:**  
+  Below is a snapshot of GPU usage during the training process:
+
+  ![Training GPU Util](<frontend/images/GPU Util.png>)
+## 🔗 Download
 You can download the CTranslate2-converted model from the following link:
 
 [📥 Download Model](https://drive.google.com/drive/folders/1RaeZejfRaVzpsjHlM-pNAPji7v7xrwgJ?usp=sharing)
-
-
-Below is a sample of the GPU utilization during the training process:
-
-![Training GPU Util](<frontend/images/GPU Util.png>)
 
 ---
 
