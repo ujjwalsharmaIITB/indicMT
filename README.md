@@ -36,7 +36,14 @@ The training and evaluation datasets primarily come from the **BPCC** corpus—a
 - Tamil  
 - Urdu  
 
+
+## Demo
+
+Try out the demo by clicking the link below:  
+[Indic MT Demo](https://www.cfilt.iitb.ac.in/indicMTApp)
+
 ---
+
 
 ## Training Details
 
