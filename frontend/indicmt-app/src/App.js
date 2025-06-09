@@ -38,7 +38,7 @@ const App = () => {
 
   return (
     <div className="app-container">
-      <h1 className="title">🇮🇳 IndicMT Translation App</h1>
+      <h1 className="title"> IndicMT Translation App </h1>
 
       <div className="language-selectors">
         <div className="selector">
