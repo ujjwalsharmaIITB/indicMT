@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/indicMTApp/static/css/main.a08b72ba.css",
+    "main.js": "/indicMTApp/static/js/main.257175c2.js",
+    "static/js/453.1e239ed3.chunk.js": "/indicMTApp/static/js/453.1e239ed3.chunk.js",
+    "index.html": "/indicMTApp/index.html",
+    "main.a08b72ba.css.map": "/indicMTApp/static/css/main.a08b72ba.css.map",
+    "main.257175c2.js.map": "/indicMTApp/static/js/main.257175c2.js.map",
+    "453.1e239ed3.chunk.js.map": "/indicMTApp/static/js/453.1e239ed3.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a08b72ba.css",
+    "static/js/main.257175c2.js"
+  ]
+}

@@ -1,0 +1,7 @@
+[server]
+headless = true
+port = 8080
+enableCORS = true
+
+[browser]
+gatherUsageStats = false
