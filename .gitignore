@@ -1,0 +1,63 @@
+# secrets
+*.env
+.env.*
+
+# job logs and machine-specific runtime info
+logs/
+environment-info/
+
+# raw / generated data (reproducible from the download and processing scripts, not source)
+data/**/raw/
+data/**/splits/
+data/**/*.jsonl
+data/dataset_statistics.md
+dataset_statistics.md
+*.jsonl
+*.csv
+*.tsv
+
+# tokenizer artifacts
+tokenizer/**/*.model
+tokenizer/**/*.vocab
+tokenizer/corpus/
+tokenizer/sweep/
+tokenizer/analysis/results/
+
+# mixing artifacts (regenerate with mixing/build_mixture.py; multi-GB)
+mixing/output/
+
+# training data, vocab files, checkpoints and run directories
+128k-spm/
+[0-9]*[a-z]*-spm/
+**/opennmt/
+*.pt
+*.ckpt
+
+# evaluation artifacts (translations and scores; regenerate with evaluation/run_eval.py)
+evaluation/results/
+evaluation/llm_judge/results/
+
+# CTranslate2 / deployment artifacts
+**/ct2_model/
+**/ct2/
+**/*.bin
+# staged CT2 model and SPM copy used as the Docker build input
+deployment/model/
+# mechanical copy of data/common/languages.py (see deployment/stage_common.py)
+deployment/api/common/
+# optional score file for the frontend's Benchmarks tab
+deployment/frontend/benchmarks.json
+
+# release assets built locally
+*.tar.gz
+
+# python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+venv/
+.venv/
+.pytest_cache/
+
+# os
+.DS_Store

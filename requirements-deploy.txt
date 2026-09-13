@@ -1,0 +1,9 @@
+# IndicMT: minimal environment to SERVE a released model on CPU (FastAPI backend + frontend).
+# No PyTorch or OpenNMT-py: CTranslate2 runs the converted int8 model directly.
+# Same pins as deployment/requirements.txt, which the Docker image installs.
+# For training, evaluation or model conversion use requirements-train.txt.
+ctranslate2==4.8.2
+sentencepiece==0.2.2
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+pydantic==2.13.5

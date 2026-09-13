@@ -1,0 +1,33 @@
+# IndicMT: full environment for the whole pipeline (data, tokenizer, training, evaluation, conversion, serving).
+# To only serve a released model on CPU, use requirements-deploy.txt instead.
+# Tested with Python 3.10/3.11. The LLM judge needs a SEPARATE environment (vLLM; see
+# evaluation/llm_judge/README.md and scripts/slurm/llm_judge_setup_env.sh).
+#
+# torch must match your CUDA build. The training runs used torch 2.2.0 built for CUDA 12.1
+# (install with the matching --index-url from https://pytorch.org if needed).
+torch==2.2.0
+OpenNMT-py==3.5.1
+# NumPy 2 breaks this torch build's C extensions.
+numpy==1.26.4
+
+# Data and tokenizer
+datasets>=3.6.0
+huggingface_hub>=0.32.0
+tqdm>=4.67.0
+pandas>=2.2.0
+sentencepiece==0.2.2
+transformers>=4.50.0
+
+# Evaluation
+sacrebleu==2.6.0
+matplotlib
+
+# Deployment (CTranslate2 conversion and the API)
+ctranslate2==4.8.2
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+pydantic==2.13.5
+httpx
+
+# Tests
+pytest
