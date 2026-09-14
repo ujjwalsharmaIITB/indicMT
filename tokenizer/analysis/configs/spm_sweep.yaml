@@ -1,0 +1,79 @@
+# SentencePiece sweep config for experiment A2 (fertility sweep).
+# See tokenizer/README.md and tokenizer/analysis/README.md.
+#
+# Every field under `fixed` is held constant across all 7 runs; `vocab_sizes` is the only
+# thing that varies. Keep it that way — if a flag changes mid-sweep the sweep is void.
+
+input: tokenizer/corpus/spm_train_corpus_mixed.txt   # built by tokenizer/prepare_corpus.py
+                                            # (NOT mixing/output/ - the tokenizer
+                                            # corpus and the training mixtures differ on purpose;
+                                            # see tokenizer/README.md). Per-language:
+                                            # full bpcc-human + mined top-up to 1M (Indic) /
+                                            # 3M (English), script-filtered, deduplicated.
+
+output_dir: tokenizer/sweep/mixed            # writes spm_{size}.model / spm_{size}.vocab
+                                            # (gitignored). tokenizer/sweep/human_only/ holds
+                                            # the fixed ablation baseline (16k only, trained on
+                                            # spm_train_corpus_human_only.txt).
+
+vocab_sizes: [16000, 32000, 64000, 96000, 128000, 192000, 256000]
+
+fixed:
+  model_type: unigram                       # not BPE: better morpheme alignment for Indic
+                                            # (Brahma et al. 2025), and gives a segmentation
+                                            # lattice (Kudo 2018)
+  character_coverage: 1.0                   # 8+ scripts; dropping rare characters risks
+                                            # gutting a script. Costs vocab slots at 16k.
+  train_extremely_large_corpus: true
+  normalization_rule_name: nmt_nfkc         # must match the normalization used by the
+                                            # fertility and corpus laws scripts
+  bos_id: 0
+  pad_id: 1
+  eos_id: 2
+  unk_id: 3
+  byte_fallback: false                      # with coverage 1.0 there should be no unknowns;
+                                            # a non-zero unk rate in results is a bug, not a
+                                            # tuning opportunity
+  user_defined_symbols:                     # the 23 language tags, from data/common/languages.py.
+    - "<en>"                                # Must be present in every run or the trained vocab
+    - "<as>"                                # will not match what training feeds the model.
+    - "<bn>"
+    - "<br>"
+    - "<doi>"
+    - "<gom>"
+    - "<gu>"
+    - "<hi>"
+    - "<kn>"
+    - "<ks>"
+    - "<mai>"
+    - "<ml>"
+    - "<mni>"
+    - "<mr>"
+    - "<ne>"
+    - "<or>"
+    - "<pa>"
+    - "<sa>"
+    - "<sat>"
+    - "<sd>"
+    - "<ta>"
+    - "<te>"
+    - "<ur>"
+
+# Practical notes (see tokenizer/README.md):
+#   - Unigram training at 192k/256k is RAM-bound, not GPU work. Use a high-memory node.
+#   - If the mixed corpus does not fit in memory, add:
+#       input_sentence_size: 10000000
+#       shuffle_input_sentence: true
+#     and record the sampled size in the run notes, since it changes the
+#     vocabulary allocation and therefore the fertility numbers.
+#   - The 16k run may be infeasible once character_coverage=1.0 has consumed base-character
+#     slots across 8+ scripts. Record that outcome; do not silently drop the row.
+
+evaluation:
+  # Held-out text for fertility: IN22-Gen + IN22-Conv combined, multi-parallel (same 2,527
+  # sentences across all 23 languages) - see tokenizer/README.md
+  # for why this replaced the bpcc-human valid splits. Never the SPM training text.
+  fertility_corpus: data/in22/combined_fertility_eval.jsonl
+  metrics: [fertility, chars_per_subword, whole_word_rate, vocab_allocation_share, unk_rate]
+  aggregates: [macro, worst_case, micro]    # macro drives selection; worst_case vetoes;
+                                            # micro is reported for comparability only
