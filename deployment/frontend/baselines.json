@@ -1,0 +1,432 @@
+{
+ "source": {
+  "name": "bodhan-ai/indic-translate model card",
+  "url": "https://huggingface.co/bodhan-ai/indic-translate",
+  "fetched": "2026-09-19"
+ },
+ "protocol": "IN22-Gen, 1,024 sentences per direction, 22 languages, chrF++ only, sentence-level chrF++ and greedy decoding as stated on the card; taken as published, not re-run",
+ "partial_note": "Rows marked partial cover only 16 of the 22 IN22-Gen languages (translategemma has no code path for Bodo, Dogri, Konkani, Maithili, Manipuri or Santali) and are not directly comparable to the 22-language aggregates.",
+ "macro": [
+  {
+   "model": "Sarvam Translate",
+   "en_xx": 48.9,
+   "xx_en": 52.4,
+   "partial": false,
+   "params": {
+    "total_b": 4.0,
+    "active_b": null,
+    "kind": "rounded",
+    "note": "Hugging Face model page shows '4B params'; fine-tuned from Gemma 3 4B"
+   }
+  },
+  {
+   "model": "IndicTrans2",
+   "en_xx": 48.6,
+   "xx_en": 62.8,
+   "partial": false,
+   "params": {
+    "total_b": 1.1,
+    "active_b": null,
+    "kind": "variant",
+    "note": "The 1.1B variant; the model card does not say which variant was ranked (a distilled variant is about 0.3B)"
+   }
+  },
+  {
+   "model": "Indic Translate",
+   "en_xx": 47.7,
+   "xx_en": 60.4,
+   "partial": false,
+   "params": {
+    "total_b": 7.94,
+    "active_b": null,
+    "kind": "card",
+    "note": "Total parameters as stated on its own model card; built on Gemma 4 E4B"
+   }
+  },
+  {
+   "model": "gemini-3.5-flash",
+   "en_xx": 40.3,
+   "xx_en": 66.6,
+   "partial": false,
+   "params": {
+    "total_b": null,
+    "active_b": null,
+    "kind": "undisclosed",
+    "note": "Google does not publish a parameter count"
+   }
+  },
+  {
+   "model": "translategemma-27b-it",
+   "en_xx": 39.6,
+   "xx_en": 58.5,
+   "partial": true,
+   "params": {
+    "total_b": 27.0,
+    "active_b": null,
+    "kind": "nominal",
+    "note": "Size from the model name; built on Gemma 3 27B"
+   }
+  },
+  {
+   "model": "gemma-4-31B-it",
+   "en_xx": 39.2,
+   "xx_en": 59.6,
+   "partial": false,
+   "params": {
+    "total_b": 30.7,
+    "active_b": null,
+    "kind": "primary",
+    "note": "Total parameters on the Hugging Face model card"
+   }
+  },
+  {
+   "model": "translategemma-12b-it",
+   "en_xx": 37.1,
+   "xx_en": 55.0,
+   "partial": true,
+   "params": {
+    "total_b": 12.0,
+    "active_b": null,
+    "kind": "nominal",
+    "note": "Size from the model name; built on Gemma 3 12B"
+   }
+  },
+  {
+   "model": "gemma-4-26B-a4b-it",
+   "en_xx": 36.2,
+   "xx_en": 56.6,
+   "partial": false,
+   "params": {
+    "total_b": 25.2,
+    "active_b": 3.8,
+    "kind": "primary",
+    "note": "Mixture of experts: 25.2B total, 3.8B active per token (model card)"
+   }
+  },
+  {
+   "model": "gemma-3-27b-it",
+   "en_xx": 31.9,
+   "xx_en": 55.5,
+   "partial": false,
+   "params": {
+    "total_b": 27.43,
+    "active_b": null,
+    "kind": "primary",
+    "note": "Gemma 3 technical report parameter table, including the vision encoder"
+   }
+  },
+  {
+   "model": "translategemma-4b-it",
+   "en_xx": 31.2,
+   "xx_en": 49.2,
+   "partial": true,
+   "params": {
+    "total_b": 4.0,
+    "active_b": null,
+    "kind": "nominal",
+    "note": "Size from the model name; built on Gemma 3 4B"
+   }
+  },
+  {
+   "model": "gemma-3-12b-it",
+   "en_xx": 28.8,
+   "xx_en": 53.2,
+   "partial": false,
+   "params": {
+    "total_b": 12.19,
+    "active_b": null,
+    "kind": "primary",
+    "note": "Gemma 3 technical report parameter table, including the vision encoder"
+   }
+  },
+  {
+   "model": "gemma-3-4b-it",
+   "en_xx": 22.9,
+   "xx_en": 47.1,
+   "partial": false,
+   "params": {
+    "total_b": 4.3,
+    "active_b": null,
+    "kind": "primary",
+    "note": "Gemma 3 technical report parameter table, including the vision encoder"
+   }
+  }
+ ],
+ "per_language": {
+  "Indic Translate": {
+   "as": [
+    45.5,
+    64.5
+   ],
+   "bn": [
+    48.9,
+    62.1
+   ],
+   "br": [
+    48.5,
+    54.2
+   ],
+   "doi": [
+    54.5,
+    66.9
+   ],
+   "gu": [
+    52.3,
+    64.9
+   ],
+   "hi": [
+    55.5,
+    64.1
+   ],
+   "kn": [
+    51.1,
+    63.2
+   ],
+   "ks": [
+    34.4,
+    56.7
+   ],
+   "gom": [
+    43.8,
+    54.6
+   ],
+   "mai": [
+    50.2,
+    63.0
+   ],
+   "ml": [
+    47.1,
+    61.8
+   ],
+   "mni": [
+    44.3,
+    52.7
+   ],
+   "mr": [
+    50.2,
+    62.3
+   ],
+   "ne": [
+    49.3,
+    66.1
+   ],
+   "or": [
+    47.3,
+    64.8
+   ],
+   "pa": [
+    48.4,
+    59.2
+   ],
+   "sa": [
+    36.0,
+    53.6
+   ],
+   "sat": [
+    39.2,
+    47.3
+   ],
+   "sd": [
+    37.5,
+    55.5
+   ],
+   "ta": [
+    50.2,
+    58.4
+   ],
+   "te": [
+    51.3,
+    62.7
+   ],
+   "ur": [
+    64.0,
+    69.6
+   ]
+  },
+  "Sarvam Translate": {
+   "as": [
+    46.4,
+    54.1
+   ],
+   "bn": [
+    49.4,
+    53.1
+   ],
+   "br": [
+    48.9,
+    48.9
+   ],
+   "doi": [
+    58.2,
+    56.3
+   ],
+   "gu": [
+    53.1,
+    55.2
+   ],
+   "hi": [
+    56.4,
+    56.1
+   ],
+   "kn": [
+    52.2,
+    53.4
+   ],
+   "ks": [
+    35.1,
+    50.1
+   ],
+   "gom": [
+    44.9,
+    48.2
+   ],
+   "mai": [
+    50.5,
+    55.2
+   ],
+   "ml": [
+    47.7,
+    52.5
+   ],
+   "mni": [
+    45.5,
+    47.3
+   ],
+   "mr": [
+    51.3,
+    54.3
+   ],
+   "ne": [
+    49.9,
+    56.9
+   ],
+   "or": [
+    48.2,
+    54.6
+   ],
+   "pa": [
+    48.3,
+    53.6
+   ],
+   "sa": [
+    38.1,
+    47.5
+   ],
+   "sat": [
+    40.9,
+    43.4
+   ],
+   "sd": [
+    39.1,
+    49.0
+   ],
+   "ta": [
+    50.9,
+    50.1
+   ],
+   "te": [
+    51.6,
+    53.1
+   ],
+   "ur": [
+    65.3,
+    58.6
+   ]
+  },
+  "IndicTrans2": {
+   "as": [
+    47.1,
+    65.8
+   ],
+   "bn": [
+    51.8,
+    63.2
+   ],
+   "br": [
+    47.8,
+    62.1
+   ],
+   "doi": [
+    57.8,
+    72.6
+   ],
+   "gu": [
+    53.5,
+    66.5
+   ],
+   "hi": [
+    56.7,
+    65.4
+   ],
+   "kn": [
+    51.0,
+    64.2
+   ],
+   "ks": [
+    40.2,
+    60.4
+   ],
+   "gom": [
+    45.2,
+    59.2
+   ],
+   "mai": [
+    48.7,
+    64.8
+   ],
+   "ml": [
+    50.9,
+    64.5
+   ],
+   "mni": [
+    44.6,
+    57.9
+   ],
+   "mr": [
+    51.0,
+    63.7
+   ],
+   "ne": [
+    49.0,
+    67.7
+   ],
+   "or": [
+    43.9,
+    66.2
+   ],
+   "pa": [
+    50.6,
+    63.4
+   ],
+   "sa": [
+    38.8,
+    54.8
+   ],
+   "sat": [
+    33.4,
+    45.3
+   ],
+   "sd": [
+    36.6,
+    57.3
+   ],
+   "ta": [
+    49.5,
+    59.8
+   ],
+   "te": [
+    52.4,
+    64.8
+   ],
+   "ur": [
+    68.2,
+    73.0
+   ]
+  }
+ },
+ "ours_params": {
+  "total_b": 0.153807872,
+  "note": "Measured: 153,807,872 parameters (encoder 103,310,336 + decoder 50,497,536)"
+ },
+ "params_note": "Parameter counts are gathered from each model's public page or report, not measured here; 'nominal' comes from the model name, 'rounded' from a rounded figure on the page. gemini-3.5-flash is undisclosed and is not plotted."
+}

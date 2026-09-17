@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>IndicMT — Translate</title>
+<script>
+  /* Apply the saved theme before first paint (no flash). */
+  try { var t = localStorage.getItem("indicmt.theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#source-text">Skip to input</a>
+<div class="bg-wash" aria-hidden="true"></div>
+
+<header class="topbar glass">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">इ</span>
+      <span class="brand-name">IndicMT</span>
+    </div>
+
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <span class="tab-indicator" aria-hidden="true"></span>
+      <button class="tab active" id="tab-translate" data-tab="translate" role="tab" aria-selected="true" aria-controls="panel-translate" tabindex="0">Translate</button>
+      <button class="tab" id="tab-benchmarks" data-tab="benchmarks" role="tab" aria-selected="false" aria-controls="panel-benchmarks" tabindex="-1">Benchmarks</button>
+    </nav>
+
+    <div class="top-actions">
+      <div class="theme-toggle" role="radiogroup" aria-label="Theme">
+        <button type="button" role="radio" data-theme-choice="system" aria-checked="true" title="Match system theme" aria-label="System theme">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <button type="button" role="radio" data-theme-choice="light" aria-checked="false" title="Light theme" aria-label="Light theme">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <button type="button" role="radio" data-theme-choice="dark" aria-checked="false" title="Dark theme" aria-label="Dark theme">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <button type="button" id="help-btn" class="icon-btn gbtn" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div id="disclaimer-banner" class="banner warn hidden" role="note"></div>
+
+<main>
+  <section id="panel-translate" class="panel active" role="tabpanel" aria-labelledby="tab-translate" tabindex="0">
+    <div class="lang-rail glass">
+      <div class="picker" id="picker-source" data-role="source">
+        <span class="picker-label" id="lbl-source">From</span>
+        <button type="button" class="picker-trigger gbtn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="lbl-source picker-source-val">
+          <span class="picker-val" id="picker-source-val"></span>
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <button id="swap-btn" class="swap-btn gbtn" type="button" title="Swap languages (Ctrl/Cmd+Shift+S)" aria-label="Swap languages">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M7 7h11M7 7l4-4M7 7l4 4M17 17H6M17 17l-4-4M17 17l-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <div class="picker" id="picker-target" data-role="target">
+        <span class="picker-label" id="lbl-target">To</span>
+        <button type="button" class="picker-trigger gbtn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="lbl-target picker-target-val">
+          <span class="picker-val" id="picker-target-val"></span>
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="panes">
+      <div class="pane pane-in" id="pane-in">
+        <label class="sr-only" for="source-text">Text to translate</label>
+        <textarea id="source-text" placeholder="Type or paste text…" maxlength="2000" spellcheck="false" rows="4"></textarea>
+        <div class="pane-foot">
+          <span class="char-count" id="char-count-wrap"><span id="char-count">0</span> / 2000</span>
+          <span class="spacer"></span>
+          <button type="button" id="clear-btn" class="ghost-btn gbtn hidden" aria-label="Clear input">
+            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span>Clear</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="pane pane-out" id="pane-out" aria-busy="false">
+        <div class="out-head">
+          <span id="route-badge" class="route-badge hidden"></span>
+        </div>
+        <div class="out-body">
+          <div id="output-placeholder" class="output-placeholder">
+            <p>Your translation will appear here.</p>
+            <div id="example-chips" class="chips" aria-label="Examples"></div>
+          </div>
+          <div id="output-text" class="output-text hidden" tabindex="0" aria-label="Translation"></div>
+          <div id="skeleton" class="skeleton hidden" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div id="slow-note" class="slow-note hidden">Still working — this can take a while on long inputs.</div>
+          <div id="error-box" class="error-box hidden" role="alert">
+            <span id="error-text"></span>
+            <button type="button" id="retry-btn" class="ghost-btn gbtn hidden">Retry</button>
+          </div>
+        </div>
+        <div id="pivot-note" class="pivot-note hidden">
+          <span class="pivot-icon" aria-hidden="true">⇄</span>
+          <span>Routed through English (pivot): <em id="pivot-text"></em></span>
+        </div>
+        <div class="pane-foot">
+          <span id="latency-chip" class="chip-static hidden"></span>
+          <span class="spacer"></span>
+          <button type="button" id="copy-btn" class="ghost-btn gbtn" disabled title="Copy translation (Ctrl/Cmd+Shift+C)">
+            <svg class="ic-copy" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <svg class="ic-check" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span id="copy-label">Copy</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <span class="hint"><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> to translate</span>
+      <button id="translate-btn" class="primary-btn gbtn tinted" type="button">
+        <span class="btn-label">Translate</span>
+        <span class="btn-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      </button>
+    </div>
+
+    <section class="history" aria-labelledby="history-title">
+      <div class="history-head">
+        <h2 id="history-title">Recent translations</h2>
+        <button type="button" id="history-clear" class="ghost-btn gbtn destructive hidden">Clear all</button>
+      </div>
+      <p id="history-empty" class="muted small">Nothing yet. Your last translations are kept in this browser only.</p>
+      <ul id="history-list" class="history-list"></ul>
+    </section>
+  </section>
+
+  <section id="panel-benchmarks" class="panel" role="tabpanel" aria-labelledby="tab-benchmarks" tabindex="0" hidden>
+    <div id="benchmarks-banner" class="banner warn"></div>
+
+    <section class="card bench-sec" aria-labelledby="h-baselines">
+      <div class="card-head"><h2 id="h-baselines">Against published baselines</h2><span class="meta-chip" id="meta-rank"></span></div>
+      <p class="sub">IN22-Gen, macro chrF++ over all languages, one linear 0&ndash;100 scale.</p>
+      <div class="rk-controls" role="group" aria-label="Chart controls">
+        <div class="seg" role="radiogroup" aria-label="Sort charts by">
+          <button type="button" role="radio" aria-checked="true" data-rsort="score">Score</button>
+          <button type="button" role="radio" aria-checked="false" data-rsort="size">Size</button>
+          <button type="button" role="radio" aria-checked="false" data-rsort="name">Name</button>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="Chart direction filter">
+          <button type="button" role="radio" aria-checked="true" data-dir="all">All</button>
+          <button type="button" role="radio" aria-checked="false" data-dir="en->xx">en&rarr;xx</button>
+          <button type="button" role="radio" aria-checked="false" data-dir="xx->en">xx&rarr;en</button>
+        </div>
+        <button type="button" id="hide-partial" class="gbtn chip-toggle" aria-pressed="false">Hide partial coverage</button>
+        <span id="pin-chip" class="pin-chip hidden"><span id="pin-text"></span><button type="button" id="pin-clear" class="gbtn small-btn" aria-label="Clear pinned models">Clear</button></span>
+      </div>
+      <div class="bench-pair">
+        <div class="bench-panel" id="panel-rk-out"><h3 id="h-rk-out">English &rarr; Indic</h3><div id="rank-out"></div></div>
+        <div class="bench-panel" id="panel-rk-in"><h3 id="h-rk-in">Indic &rarr; English</h3><div id="rank-in"></div></div>
+      </div>
+      <div id="baseline-notes"></div>
+    </section>
+
+    <section class="card bench-sec" aria-labelledby="h-size">
+      <div class="card-head"><h2 id="h-size">Model size</h2><span class="meta-chip" id="meta-size"></span></div>
+      <p class="sub">Total parameters, log scale.</p>
+      <div id="size-chart"></div>
+      <div id="size-notes"></div>
+    </section>
+
+    <section class="card bench-sec" aria-labelledby="bench-table-title">
+      <div class="card-head"><h2 id="bench-table-title">Language-wise performance</h2><span class="meta-chip" id="meta-table"></span></div>
+
+      <div class="bench-controls">
+        <div class="seg" role="radiogroup" aria-label="Benchmark set">
+          <button type="button" role="radio" aria-checked="true" data-set="in22-gen">IN22-Gen</button>
+          <button type="button" role="radio" aria-checked="false" data-set="in22-conv">IN22-Conv</button>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="Direction filter">
+          <button type="button" role="radio" aria-checked="true" data-dir="all">All</button>
+          <button type="button" role="radio" aria-checked="false" data-dir="en->xx">en→xx</button>
+          <button type="button" role="radio" aria-checked="false" data-dir="xx->en">xx→en</button>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="Row density">
+          <button type="button" role="radio" aria-checked="true" data-density="comfortable">Comfortable</button>
+          <button type="button" role="radio" aria-checked="false" data-density="compact">Compact</button>
+        </div>
+        <label class="sr-only" for="bench-search">Filter by language</label>
+        <input id="bench-search" class="search-input" type="search" placeholder="Filter by language…" autocomplete="off">
+      </div>
+
+      <div id="bench-legend" class="bench-legend hidden"></div>
+      <p id="bench-conv-note" class="bench-msg hidden">No published baselines exist for IN22-Conv.</p>
+      <div id="benchmarks-macro" class="macro-row"></div>
+      <div class="table-wrap" role="region" aria-label="Benchmark scores table" tabindex="0">
+        <table id="benchmarks-table">
+          <thead>
+            <tr>
+              <th scope="col" aria-sort="ascending"><button type="button" data-sort="dir">Direction</button></th>
+              <th scope="col" class="num" aria-sort="none"><button type="button" data-sort="chrf">chrF++</button></th>
+              <th scope="col" class="num" aria-sort="none"><button type="button" data-sort="bleu">BLEU</button></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="bench-empty" class="muted hidden">No rows match this filter.</p>
+    </section>
+  </section>
+</main>
+
+<!-- Language picker popover (shared) -->
+<div id="picker-pop" class="picker-pop glass hidden" role="dialog" aria-label="Choose language">
+  <input id="picker-search" class="search-input" type="text" role="combobox" aria-expanded="true" aria-controls="picker-list" aria-autocomplete="list" placeholder="Search languages…" autocomplete="off" spellcheck="false">
+  <ul id="picker-list" class="picker-list" role="listbox" aria-label="Languages"></ul>
+  <p id="picker-empty" class="muted small hidden">No language matches.</p>
+</div>
+<div id="picker-scrim" class="scrim hidden"></div>
+
+<!-- Shortcuts sheet -->
+<div id="help-sheet" class="sheet glass hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
+  <h2 id="help-title">Keyboard shortcuts</h2>
+  <dl>
+    <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd></dt><dd>Translate</dd>
+    <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></dt><dd>Swap languages</dd>
+    <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd></dt><dd>Copy translation</dd>
+    <dt><kbd>1</kbd> / <kbd>2</kbd></dt><dd>Translate / Benchmarks tab (outside text fields)</dd>
+    <dt><kbd>?</kbd></dt><dd>This sheet</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close popups, clear pinned models</dd>
+    <dt><kbd>&uarr;</kbd> / <kbd>&darr;</kbd> / <kbd>Enter</kbd></dt><dd>Benchmarks: move between chart rows / pin a model</dd>
+  </dl>
+  <button type="button" id="help-close" class="primary-btn gbtn tinted small">Close</button>
+</div>
+
+<div id="toasts" class="toasts"></div>
+<div class="sr-only" id="live-status" role="status" aria-live="polite"></div>
+<div class="sr-only" id="live-alert" role="alert"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

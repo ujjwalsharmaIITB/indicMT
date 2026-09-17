@@ -1,0 +1,5 @@
+ctranslate2==4.8.2
+sentencepiece==0.2.2
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+pydantic==2.13.5

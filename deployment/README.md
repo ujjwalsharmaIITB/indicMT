@@ -1,0 +1,140 @@
+# deployment: CTranslate2 conversion, quantization, API and frontend
+
+This directory turns a trained checkpoint into a small CPU-served model with a FastAPI backend and a plain HTML/JS
+frontend. The explanation and all numbers are in [`../docs/deployment.md`](../docs/deployment.md). The model served is the
+**current best model** (12+12, combined pre-training then human fine-tuning without replay, step 1,800), converted to
+**int8** (170.6 MB, runs on CPU). The release model will be chosen after the deeper architectures finish fine-tuning.
+Weights will be linked from `<WEIGHTS_URL>`.
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `convert_to_ct2.py` | Converts a checkpoint to CTranslate2 in three CPU-usable variants: `float32`, `int16`, `int8`. |
+| `ct2_eval.py` | Runs the full 44-direction IN22-Gen evaluation directly through CTranslate2 for one variant: chrF++, BLEU, latency and throughput. |
+| `ct2_infer.py` | The one shared inference path (tag, SentencePiece encode, `translate_batch`, decode), used by `ct2_eval.py`, the API and as a command-line smoke test. |
+| `stage_common.py` | Copies `data/common/languages.py` into `deployment/api/common/` for the container build. |
+| `api/` | FastAPI app: `main.py`, `schemas.py`, the direct/pivot router `translator.py`, `languages.py`. |
+| `frontend/` | Plain HTML, CSS and JS, served by the same process. No build step. |
+| `stress_test.py` | asyncio and httpx load generator (p50, p95, p99 and requests per second). |
+| `Dockerfile`, `.dockerignore`, `requirements.txt` | Container image (Python 3.11 slim, no PyTorch). `requirements.txt` here has the same pins as the top-level `requirements-deploy.txt`; the Docker build context is `deployment/`, so it needs its own copy. |
+
+## 1. Convert and compare quantization variants
+
+```bash
+sbatch -p <partition> scripts/slurm/deployment_convert_ct2.sh                 # Job20, CPU only
+# defaults to the current best model; override with CHECKPOINT=... CT2_ROOT=...
+```
+
+This converts the checkpoint, evaluates float32, int16 and int8 on IN22-Gen through CTranslate2, and writes
+`quantization_report.md`. Outputs go beside the checkpoint, in
+`128k-spm/opennmt/<arm>/ct2/<checkpoint>/{float32,int16,int8}/`, and are not tracked by git.
+
+Two compatibility problems were found and fixed in the converter:
+
+1. OpenNMT-py's default `torch.load(..., weights_only=True)` rejects the checkpoint's `opt` field. We pass CTranslate2's
+   `unsafe_deserialization=True`, which is fine for a self-trained, trusted checkpoint. Do not use it on untrusted files.
+2. CTranslate2 rejects `self_attn_type == "scaled-dot-flash"`, which OpenNMT-py 3.5.1 chose automatically. The script
+   relabels it `"scaled-dot"` in a patched temporary copy. This only names the attention kernel; the learned weights are the
+   same. The original checkpoint is not modified.
+
+Quantization on the current best model (CPU, 8 threads, beam 5, IN22-Gen):
+
+| Variant | en→xx chrF++ | xx→en chrF++ | p50 latency | Size |
+|---|---|---|---|---|
+| float32 | 46.04 | 53.87 | 399.2 ms | 630.4 MB |
+| int16 | 45.91 | 53.79 | 367.1 ms | 323.2 MB |
+| int8 | 45.90 | 53.77 | 374.2 ms | 170.6 MB |
+
+int8 costs about 0.13 chrF++ (en→xx) and 0.06 (xx→en) against float32. That is statistically significant but far below the
+gap to neighbouring systems, so int8 is the serving choice. int16 is the lossless option at half the size. Job21
+(`scripts/slurm/deployment_quant_significance.sh`) runs the significance test.
+
+## 2. Run the API (no container needed)
+
+Get the model from `<WEIGHTS_URL>`, or convert your own (step 1). Stage the int8 model and the tokenizer:
+
+```bash
+pip install -r requirements-deploy.txt   # minimal serving environment (CPU, no PyTorch)
+mkdir -p deployment/model/ct2_model
+cp -r 128k-spm/opennmt/bpcc-ft-combined-human/ct2/model_step_1800/int8/* deployment/model/ct2_model/
+cp tokenizer/sweep/mixed/spm_128000.model deployment/model/spm_128000.model
+python deployment/stage_common.py
+
+# quick command-line check of the raw CTranslate2 model
+python deployment/ct2_infer.py --model-dir deployment/model/ct2_model \
+  --spm deployment/model/spm_128000.model --text "Hello, how are you?" --target-lang hi
+
+# serve (open http://localhost:8000/ for the frontend)
+uvicorn deployment.api.main:app --host 0.0.0.0 --port 8000
+```
+
+`deployment/model/` is not tracked by git.
+
+Endpoints:
+
+- `POST /api/translate`, body `{"text": "...", "source_lang": "en", "target_lang": "hi"}` (short language tags). The
+  response has `translation`, `pivoted` and `pivot_intermediate`. Indic to Indic requests are **pivoted through English**:
+  an xx→en translation followed by an en→xx translation with the same model.
+- `GET /api/languages`: supported languages.
+- `GET /api/health`: checkpoint name, quantization and notice.
+
+```bash
+curl -X POST localhost:8000/api/translate -H "Content-Type: application/json" \
+  -d '{"text":"Hello, how are you?","source_lang":"en","target_lang":"hi"}'
+curl -X POST localhost:8000/api/translate -H "Content-Type: application/json" \
+  -d '{"text":"नमस्ते, आप कैसे हैं?","source_lang":"hi","target_lang":"ta"}'   # pivot: "pivoted": true
+```
+
+Settings are environment variables:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `MODEL_DIR` | `deployment/model/ct2_model` | CTranslate2 model directory |
+| `SPM_PATH` | `deployment/model/spm_128000.model` | SentencePiece model |
+| `CHECKPOINT_NAME` | `indicmt-final-int8` | label shown by `/api/health` |
+| `QUANTIZATION` | `int8` | label shown by `/api/health` |
+| `INTER_THREADS` / `INTRA_THREADS` | 4 / 1 | CTranslate2 parallelism |
+| `BEAM_SIZE` | 2 | interactive beam size (lower than the 5 used offline, for latency) |
+| `DISCLAIMER` | "Research model; outputs may contain errors." | notice shown in the UI |
+
+## 3. Frontend
+
+`frontend/` has two tabs: **Translate** (searchable language pickers, swap, copy, character counter, light, dark and system
+themes, direct-or-pivot route badge, recent translations kept in browser storage) and **Benchmarks** (sortable and
+filterable charts against published baselines). It uses system fonts only and works offline.
+
+The Benchmarks tab reads `frontend/baselines.json`, a small file of published baseline scores. **The frontend needs it to
+draw the comparison charts, so it is kept in the repository.** It is read from a public model card and not re-run. The tab
+also reads an optional `frontend/benchmarks.json` with IndicMT's own scores. That file is a copy of a `scores.json` from
+`evaluation/results/` and is not tracked. Without it the tab shows only the published baselines.
+
+## 4. Container build
+
+The `Dockerfile` is ready: Python 3.11 slim, no PyTorch, one uvicorn worker (a second worker would load a second copy of
+the model; CTranslate2 already parallelizes inside the process). The build context is `deployment/` itself, so stage the
+model, the tokenizer and `python deployment/stage_common.py` first.
+
+```bash
+podman build -f deployment/Dockerfile -t indicmt-deploy:latest deployment/
+podman run -d -p 8000:8000 indicmt-deploy:latest
+```
+
+**Status: not built yet.** On the development cluster, rootless `podman` cannot build any real image because the user has no
+`/etc/subuid` and `/etc/subgid` range, which rootless builds need to remap user IDs in base image layers. Three attempts
+(default `overlay`, `vfs`, `--userns=keep-id`) failed the same way. An administrator must add a range
+(`usermod --add-subuids ... --add-subgids ...`) and run `podman system migrate`. Then Job23
+(`scripts/slurm/deployment_podman_smoke.sh`) runs the staged check: a trivial build, the real build, a size report and a
+smoke run with real `curl` checks.
+
+## 5. Stress test
+
+```bash
+sbatch -p <partition> scripts/slurm/deployment_stress_test.sh       # Job22
+```
+
+Job22 starts the API, waits for `/api/health`, runs `stress_test.py` (by direction class, payload size and concurrency) and
+stops the server. **It has been written but not run yet.** No stress-test results are reported. The results file goes to
+`logs/stress_test_results.json`.
+
+Next: [`../docs/deployment.md`](../docs/deployment.md).
