@@ -1,0 +1,150 @@
+# Training config: bpcc-human-train only, the human-only arm of the data ablation.
+# 2x A100 with accum_count 8, so the three arms (human on 2 GPUs, mined and combined on 4
+# GPUs each) can train at the same time. The effective batch is the same 262,144 tokens/step
+# as the 4-GPU arms (16384 tokens x 2 GPUs x 8); max_grad_norm is 10 here for equivalent
+# clipping (see the Optimization block).
+#
+# This file is the reference for the other training configs, which point here for the notes
+# below.
+#
+# Architecture, identical in every arm so the data is the only variable: 12 encoder
+# + 12 decoder layers, 16 heads, d_model 512, d_ff 2048, 153,807,872 parameters
+# (encoder 103,310,336, decoder 50,497,536; checked with an onmt_train dry run against the real
+# vocabulary), a 128k shared vocabulary with source, target and generator embeddings tied.
+# Head count does not change the parameter count (attention projections are d_model x d_model
+# whatever the head split); the lever is depth. d_model stays 512: the 128k vocabulary's Zipfian
+# tail would mostly add under-trained dimensions for rare subwords rather than real capacity at
+# this data volume, and the model has to stay compact enough to deploy.
+#
+# Vocabulary: exported from the frozen 128k SentencePiece model (training/export_onmt_vocab.py).
+# It loads as exactly 128,000 entries: OpenNMT's 4 default specials, then 127,995 exported
+# pieces (SentencePiece's own control ids and one whitespace-only piece are left out), then
+# vocab_size_multiple padding.
+#
+# Sentence length: 200 subwords is far above the 99th percentile (src 58, tgt 56), so
+# filtertoolong only drops genuine outliers.
+#
+# Schedule: bpcc-human-train has 6,953,603 sentences and about 330,957,498 src+tgt tokens per
+# epoch, so one epoch is 1,262.5 steps. train_steps is a generous ceiling; the real stopping
+# point is chosen by monitoring (see docs/training.md).
+#
+# Batching: the generator's logits tensor scales with vocabulary size. A batch of 32768 tokens
+# per GPU ran out of memory at step 1 with the 128k vocabulary (about 16.8 GB at fp32 for the
+# logits alone). OpenNMT-py 3.5.1's own out-of-memory recovery path also crashes in DDP mode
+# (IndexError in all_reduce_and_rescale_tensors), so memory must be avoided rather than
+# tolerated. The fix: max_generator_batches 32 (chunks the logits) and batch_size 16384 with
+# accum_count doubled to keep 262,144 tokens/step.
+
+## Where onmt_train's own working files go
+save_data: 128k-spm/opennmt/bpcc-human/data
+
+# Vocabulary - same exported 128k vocab as every other training config.
+src_vocab: 128k-spm/vocab.128k.shared.txt
+tgt_vocab: 128k-spm/vocab.128k.shared.txt
+share_vocab: true
+src_vocab_size: 128000
+tgt_vocab_size: 128000
+
+# Same 200 cap, same justification as in the header.
+src_seq_length: 200
+tgt_seq_length: 200
+
+data:
+    corpus_1:
+        path_src: 128k-spm/data/bpcc-human.train.temp-sampled.0.5.128k.spm.src
+        path_tgt: 128k-spm/data/bpcc-human.train.temp-sampled.0.5.128k.spm.tgt
+        transforms: [filtertoolong]
+    valid:
+        path_src: 128k-spm/data/bpcc-human.dev.128k.spm.src
+        path_tgt: 128k-spm/data/bpcc-human.dev.128k.spm.tgt
+        transforms: [filtertoolong]
+
+# General opts
+log_file: 128k-spm/opennmt/bpcc-human/checkpoints/log.txt
+save_model: 128k-spm/opennmt/bpcc-human/checkpoints/model
+tensorboard_log_dir: 128k-spm/opennmt/bpcc-human/checkpoints/tensorboard
+tensorboard: true
+
+# 0 = no moving average: saved checkpoints and validation use the raw weights
+average_decay: 0
+seed: 42
+report_every: 5
+
+# Same effective 262,144 tokens/step as the 4-GPU plan (16384 tokens/GPU x
+# 2 GPUs x 8 accum = 262,144, vs. the 4-GPU plan's 16384 x 4 x 4) - matched
+# compute preserved, only the GPU count and DDP world_size actually change.
+train_steps: 100000
+accum_count: [8]
+accum_steps: [0]
+
+# Checkpoint AND validate every 100 steps and keep every checkpoint (-1 disables
+# rotation in onmt/models/model_saver.py). Dense checkpoints let us track training
+# dynamics and pick the best step; 100 is shared by every arm so checkpoints line up
+# step for step.
+# early_stopping counts validations: 32 x 100 = 3,200 steps = 2.53 epochs
+# (1,262.5 steps/epoch) - patience of about 2.5 epochs.
+early_stopping: 32
+keep_checkpoint: -1
+valid_steps: 100
+save_checkpoint_steps: 100
+
+# 1 node, 2x A100, DDP (world_size 2).
+world_size: 2
+gpu_ranks: [0, 1]
+master_port: 12350
+# 1800 s NCCL timeout: a 300 s value died to an ALLREDUCE watchdog timeout after
+# 15h44m of clean training.
+timeout: 1800
+
+# Batching - the out-of-memory fix values from the header (batch_size 16384,
+# max_generator_batches 32). Per-GPU batch size is the same regardless of GPU
+# count, so the fix carries over to every layout.
+bucket_size: 262144
+num_workers: 0
+batch_type: "tokens"
+batch_size: 16384
+valid_batch_size: 2048
+max_generator_batches: 32
+
+# Optimization - identical to the 4-GPU arms EXCEPT max_grad_norm,
+# which is doubled to keep this 2-GPU run equivalent to them.
+# OpenNMT-py 3.5.1 normalizes the loss by the global token count, then after
+# the all-reduce ALSO divides gradients by world_size (trainer.py
+# all_reduce_and_rescale_tensors(grads, n_gpu)), so for the same data this
+# run's gradient is exactly 2x a 4-GPU run's. Adam cancels a constant scale,
+# but clip_grad_norm_ runs after that rescale (optimizers.py step()): at 5,
+# 4-GPU would clip at true norm 20 and this run at 10. 10 here clips both at
+# the same true norm.
+model_dtype: "fp32"
+optim: "adam"
+learning_rate: 1
+warmup_steps: 1500
+decay_method: "noam"
+adam_beta2: 0.98
+max_grad_norm: 10
+label_smoothing: 0.1
+param_init: 0
+param_init_glorot: true
+normalization: "tokens"
+
+# Model - 12+12 layers, d_model=512, d_ff=2048, 16 heads, 128k shared vocab,
+# 153,807,872 params (see the header).
+encoder_type: transformer
+decoder_type: transformer
+position_encoding: true
+enc_layers: 12
+dec_layers: 12
+heads: 16
+hidden_size: 512
+word_vec_size: 512
+transformer_ff: 2048
+
+# Embedding tying: both ties are required to get ONE shared embedding matrix.
+share_embeddings: true
+share_decoder_embeddings: true
+
+dropout: [0.1]
+dropout_steps: [0]
+attention_dropout: [0.1]
+
+pos_ffn_activation_fn: "gelu"

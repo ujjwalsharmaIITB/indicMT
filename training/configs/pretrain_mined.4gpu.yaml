@@ -1,0 +1,156 @@
+# Training config: bpcc-mined-train only (mined-mixture), the
+# mined-only arm of the data ablation -
+# the "human-only vs. mined-only vs. combined vs. mined-then-fine-tuned-on-
+# human, at matched compute" design. Everything here
+# is identical to training/configs/pretrain_human.2gpu.yaml (architecture,
+# vocab, batching, GPU setup) except the training data itself and the
+# comments below that had to be re-derived against this corpus's own real
+# stats - deliberately, so this run is a fair comparison against the
+# human-only arm, not a differently-tuned one. See that file for the full
+# architecture/vocab verification notes (dry run, 153,807,872 parameters,
+# exactly 128,000 vocab, pre-norm confirmed automatic in OpenNMT-py 3.5.1,
+# the reasoning for the 12+12/16-head/d_model=512 revision) - not
+# re-verified separately here since none of that depends on which corpus is
+# being read. 1 node, 4x A100, DDP (world_size 4).
+
+## Where onmt_train's own working files go
+save_data: 128k-spm/opennmt/bpcc-mined/data
+
+# Vocabulary - same exported 128k vocab as every other training config (see
+# training/export_onmt_vocab.py and pretrain_human.2gpu.yaml's header) - one
+# frozen SPM model, one shared vocab file, used identically across every
+# data-ablation arm.
+src_vocab: 128k-spm/vocab.128k.shared.txt
+tgt_vocab: 128k-spm/vocab.128k.shared.txt
+share_vocab: true
+src_vocab_size: 128000
+tgt_vocab_size: 128000
+
+# Same 200 cap as pretrain_human.2gpu.yaml, re-checked against this corpus's own
+# real length distribution rather than assumed to carry over: bpcc-mined-train
+# subword counts (2%-sampled, ~4.28M lines) are
+# src(min=3, mean=17.6, 50%ile=13, 95%ile=43, 99%ile=63, max=898) and
+# tgt(min=1, mean=15.8, 50%ile=11, 95%ile=42, 99%ile=62, max=997) - mined
+# sentences skew shorter than human's (median 13/11 vs 22/20) but the tail
+# is about the same (99%ile 62-63 vs human's 56-58); 200 is still
+# comfortably above it on both sides, for the same reason as the human
+# config: only genuine outliers get filtered, not real long sentences.
+src_seq_length: 200
+tgt_seq_length: 200
+
+# Training data is bpcc-mined-train; **validation set is the SAME
+# bpcc-human-dev used by every other arm** (the held-out human dev split,
+# not temperature-resampled, not sourced from mined data at all) -
+# deliberate, not an oversight: the data-ablation comparison needs one
+# fixed, shared yardstick across human-only/mined-only/combined runs, not a
+# different validation set per arm, or the runs wouldn't be comparable.
+data:
+    corpus_1:
+        path_src: 128k-spm/data/bpcc-mined.train.temp-sampled.0.5.128k.spm.src
+        path_tgt: 128k-spm/data/bpcc-mined.train.temp-sampled.0.5.128k.spm.tgt
+        transforms: [filtertoolong]
+    valid:
+        path_src: 128k-spm/data/bpcc-human.dev.128k.spm.src
+        path_tgt: 128k-spm/data/bpcc-human.dev.128k.spm.tgt
+        transforms: [filtertoolong]
+
+# General opts
+log_file: 128k-spm/opennmt/bpcc-mined/checkpoints/log.txt
+save_model: 128k-spm/opennmt/bpcc-mined/checkpoints/model
+tensorboard_log_dir: 128k-spm/opennmt/bpcc-mined/checkpoints/tensorboard
+tensorboard: true
+
+# 0 = no moving average: saved checkpoints and validation use the raw weights
+average_decay: 0
+seed: 42
+report_every: 10
+
+# **Deliberately the SAME train_steps/batching schedule as pretrain_human.2gpu.yaml,
+# even though bpcc-mined-train is vastly bigger** (213,807,105 sentences vs
+# 6,953,603 - ~30.8x more) - this is the "matched compute" part of the data
+# ablation design: the human-only and mined-only arms
+# need the same step/token budget to be a fair comparison, not independently
+# epoch-tuned ceilings. The real consequence, stated plainly rather than
+# hidden: at ~7.15 billion combined src+tgt tokens/epoch for this corpus
+# (mean 17.6+15.8 subwords/line x 213,807,105 lines) and the same effective
+# 262,144 tokens/step, train_steps=100000 covers only ~3.7 epochs of
+# bpcc-mined-train, versus ~80-165 epochs of bpcc-human-train at the same
+# step count - the two runs see very different amounts of repetition over
+# their own data, by design, since matched compute (not matched epochs) is
+# the actual comparison this ablation is measuring. early_stopping is still
+# the real governor either way.
+train_steps: 100000
+accum_count: [4]
+accum_steps: [0]
+
+# Checkpoint AND validate every 100 steps and keep every checkpoint (-1 disables
+# rotation), same as every other arm - see pretrain_human.2gpu.yaml for why.
+# early_stopping counts validations: 273 x 100 = 27,300 steps = 1.0007 epochs
+# (27,282.1 steps/epoch) - patience of one full epoch.
+early_stopping: 273
+keep_checkpoint: -1
+valid_steps: 100
+save_checkpoint_steps: 100
+
+# 1 node, 4x A100, DDP (4 GPUs per node)
+world_size: 4
+gpu_ranks: [0, 1, 2, 3]
+master_port: 12349
+# 1800 s NCCL timeout, same as the other arms (a 300 s value died to an ALLREDUCE
+# watchdog timeout on other 4-GPU and 2-GPU runs).
+timeout: 1800
+
+# Batching - identical to pretrain_human.2gpu.yaml's, including its OOM fix
+# (batch_size halved to 16384, max_generator_batches raised to 32,
+# accum_count doubled to [4] - see that file's header for the full incident
+# writeup). The fix was about the 128k vocab's generator memory cost, not
+# about which corpus is being read, so it carries over unchanged and
+# doesn't need re-deriving per data-ablation arm.
+bucket_size: 262144
+num_workers: 0  # same precaution as pretrain_human.2gpu.yaml - see that file
+batch_type: "tokens"
+batch_size: 16384
+valid_batch_size: 2048
+max_generator_batches: 32
+
+# Optimization - identical to pretrain_human.2gpu.yaml (matched compute means
+# matched optimizer schedule too, not just matched step count)
+model_dtype: "fp32"
+optim: "adam"
+learning_rate: 1
+warmup_steps: 1500
+decay_method: "noam"
+adam_beta2: 0.98
+max_grad_norm: 5
+label_smoothing: 0.1
+param_init: 0
+param_init_glorot: true
+normalization: "tokens"
+
+# Model - identical architecture to pretrain_human.2gpu.yaml (12+12 layers,
+# d_model=512, d_ff=2048, 16 heads, 128k shared vocab, 153,807,872 params -
+# see that file's header for the verification and the d_model reasoning).
+# Must be identical for the data-ablation comparison to isolate the data
+# variable, not a confounded architecture change too.
+encoder_type: transformer
+decoder_type: transformer
+position_encoding: true
+enc_layers: 12
+dec_layers: 12
+heads: 16
+hidden_size: 512
+word_vec_size: 512
+transformer_ff: 2048
+
+# Same embedding tying as pretrain_human.2gpu.yaml - see that file's header for
+# the full explanation of what each of these two settings does and the
+# verified encoder/decoder parameter breakdown confirming the tying is
+# actually in effect, not just configured.
+share_embeddings: true
+share_decoder_embeddings: true
+
+dropout: [0.1]
+dropout_steps: [0]
+attention_dropout: [0.1]
+
+pos_ffn_activation_fn: "gelu"

@@ -1,0 +1,164 @@
+# Training config: bpcc-human-train + bpcc-mined-train, dynamically
+# weighted - the "combined" arm of the data ablation
+# ("human-only vs. mined-only vs. combined vs. mined-then-fine-tuned-on-human,
+# at matched compute"). 1 node, 4x A100, DDP (world_size 4).
+#
+# **Mixing mechanism, verified by reading OpenNMT-py 3.5.1's own mixer code
+# (onmt/inputters/dynamic_iterator.py), not assumed from the docs**: with 2+
+# named corpora under `data:`, training uses `WeightedMixer`, whose
+# `_iter_datasets` does `for ds_name, ds_weight in weights.items(): for _ in
+# range(ds_weight): yield ds_name` - each corpus's `weight` is cast with
+# `int(...)` in `DynamicDatasetIter._init_datasets` and used as a literal
+# per-cycle REPEAT COUNT for individual-sentence interleaving, not a
+# fractional probability. A weight of 0.9/0.1 (the initially proposed
+# values) would silently break: `int(0.9) == 0`, so that corpus would be
+# drawn zero times every cycle - it would never appear in training at all,
+# with no error. **Integer weights: corpus_1 (mined) weight=8, corpus_2
+# (human) weight=2** - "8 mined sentences, then 2 human sentences, repeat",
+# an 80:20 mined:human ratio. Each
+# corpus's own iterator resets/loops independently when exhausted
+# (`_reset_iter`), so human (6,953,603 sentences) simply cycles far more
+# often than mined (213,807,105 sentences) at this ratio - by design, not a
+# bug: at 8:2 human completes a pass every ~34.8M draws, mined every ~267M. `valid:` needs no weight key (confirmed: missing weight defaults to
+# 1 with a warning, not an error - onmt/utils/parse.py) and validation uses
+# `SequentialMixer` (one plain sequential pass), same as every other arm.
+#
+# **Why dynamic mixing over static concatenation**: mined:human is a
+# 30.75:1 ratio by raw sentence count (213,807,105 vs 6,953,603) - plain
+# concatenation (or an unweighted multi-corpus load) would let mined's sheer
+# volume dilute the higher-quality human-translated data down to ~3.15% of
+# what the model sees, well below the 20% human share used here. Weighted
+# mixing sets the ratio directly, independent of file size.
+#
+# Architecture/vocab/batching identical to pretrain_human.2gpu.yaml and
+# pretrain_mined.4gpu.yaml (12+12 layers, 16 heads, d_model=512, d_ff=2048,
+# 153,807,872 params, 128k shared vocab, OOM-safe batching) - must be
+# identical for the data-ablation comparison to isolate the data variable
+# only. See pretrain_human.2gpu.yaml's header for the full verification/incident
+# history this inherits.
+
+## Where onmt_train's own working files go
+save_data: 128k-spm/opennmt/bpcc-combined/data
+
+# Vocabulary - same exported 128k vocab as every other training config.
+src_vocab: 128k-spm/vocab.128k.shared.txt
+tgt_vocab: 128k-spm/vocab.128k.shared.txt
+share_vocab: true
+src_vocab_size: 128000
+tgt_vocab_size: 128000
+
+# Same 200 cap as both single-source arms - see pretrain_human.2gpu.yaml /
+# pretrain_mined.4gpu.yaml headers for the real length-percentile justification
+# on each corpus; 200 comfortably covers both.
+src_seq_length: 200
+tgt_seq_length: 200
+
+# corpus_1 = mined (weight 8), corpus_2 = human (weight 2) -> 8:2
+# mined:human per-sentence interleaving ratio (see header). Both already
+# 128k-SPM-tokenized and tag-prepended by the shared data pipeline
+# (training/build_parallel_corpus.py, training/encode_spm.py) - no further
+# tokenization transform needed, filtertoolong just drops (not truncates)
+# outliers. valid is the SAME bpcc-human-dev used by every other arm, for a
+# fair, matched-yardstick comparison across human-only/mined-only/combined.
+data:
+    corpus_1:
+        path_src: 128k-spm/data/bpcc-mined.train.temp-sampled.0.5.128k.spm.src
+        path_tgt: 128k-spm/data/bpcc-mined.train.temp-sampled.0.5.128k.spm.tgt
+        transforms: [filtertoolong]
+        weight: 8
+    corpus_2:
+        path_src: 128k-spm/data/bpcc-human.train.temp-sampled.0.5.128k.spm.src
+        path_tgt: 128k-spm/data/bpcc-human.train.temp-sampled.0.5.128k.spm.tgt
+        transforms: [filtertoolong]
+        weight: 2
+    valid:
+        path_src: 128k-spm/data/bpcc-human.dev.128k.spm.src
+        path_tgt: 128k-spm/data/bpcc-human.dev.128k.spm.tgt
+        transforms: [filtertoolong]
+
+# General opts
+log_file: 128k-spm/opennmt/bpcc-combined/checkpoints/log.txt
+save_model: 128k-spm/opennmt/bpcc-combined/checkpoints/model
+tensorboard_log_dir: 128k-spm/opennmt/bpcc-combined/checkpoints/tensorboard
+tensorboard: true
+
+# 0 = no moving average: saved checkpoints and validation use the raw weights
+average_decay: 0
+seed: 42
+report_every: 10
+
+# Same train_steps/effective-batch schedule as both single-source arms -
+# matched compute across all three data-ablation arms is the point (see
+# pretrain_mined.4gpu.yaml's header for why "matched compute" deliberately
+# means matched steps, not matched epochs, when corpus sizes differ this
+# much - the same reasoning applies here, compounded by the 8:2 mixing
+# itself already controlling how often each source is seen per step).
+train_steps: 100000
+accum_count: [4]
+accum_steps: [0]
+
+# Checkpoint AND validate every 100 steps and keep every checkpoint (-1 disables
+# rotation), same as every other arm - see pretrain_human.2gpu.yaml for why. A combined
+# "epoch" isn't well-defined (the two corpora cycle at unrelated rates under 8:2), so
+# patience reuses mined's: 273 validations x 100 = 27,300 steps = one mined epoch.
+early_stopping: 273
+keep_checkpoint: -1
+valid_steps: 100
+save_checkpoint_steps: 100
+
+# 1 node, 4x A100, DDP (4 GPUs per node)
+world_size: 4
+gpu_ranks: [0, 1, 2, 3]
+master_port: 12351
+# timeout raised from 300s (5min) to 1800s (30min) after this exact config
+# died to a 300s NCCL ALLREDUCE watchdog timeout (Rank 3) after ~3.5h of
+# training - see pretrain_human.2gpu.yaml's header for the full incident
+# writeup (the same failure independently hit the human-2gpu arm too).
+timeout: 1800
+
+# Batching - identical OOM-safe values as both single-source arms (see
+# pretrain_human.2gpu.yaml's header for the full incident writeup).
+bucket_size: 262144
+num_workers: 0  # same precaution as both single-source arms
+batch_type: "tokens"
+batch_size: 16384
+valid_batch_size: 2048
+max_generator_batches: 32
+
+# Optimization - identical to both single-source arms.
+model_dtype: "fp32"
+optim: "adam"
+learning_rate: 1
+warmup_steps: 1500
+decay_method: "noam"
+adam_beta2: 0.98
+max_grad_norm: 5
+label_smoothing: 0.1
+param_init: 0
+param_init_glorot: true
+normalization: "tokens"
+
+# Model - identical architecture to both single-source arms (12+12 layers,
+# d_model=512, d_ff=2048, 16 heads, 128k shared vocab, 153,807,872 params).
+# Must be identical for the data-ablation comparison to isolate the data
+# variable only.
+encoder_type: transformer
+decoder_type: transformer
+position_encoding: true
+enc_layers: 12
+dec_layers: 12
+heads: 16
+hidden_size: 512
+word_vec_size: 512
+transformer_ff: 2048
+
+# Same embedding tying as both single-source arms - see pretrain_human.2gpu.yaml's
+# header for the full explanation and verified parameter breakdown.
+share_embeddings: true
+share_decoder_embeddings: true
+
+dropout: [0.1]
+dropout_steps: [0]
+attention_dropout: [0.1]
+
+pos_ffn_activation_fn: "gelu"
