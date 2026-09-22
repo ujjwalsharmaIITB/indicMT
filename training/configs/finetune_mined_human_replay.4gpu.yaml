@@ -1,0 +1,139 @@
+# Fine-tuning config (follow-up to the data study): start from a mined-only checkpoint and continue
+# training on human data, with 20% mined replay (human:mined = 4:1). 1 node, 4x A100, DDP (world_size 4), same effective batch as
+# the pre-training arms (16384 tokens x 4 GPUs x accum 4 = 262,144 tokens/step).
+#
+# The starting checkpoint is NOT in this file: it is passed as --train_from by
+# scripts/slurm/training_finetune.sh together with --reset_optim all, which loads the model
+# weights but builds a new optimizer and restarts the step counter at 0 (onmt/utils/optimizers.py:
+# build "all" = "Build everything from scratch"), so the LR schedule below applies as written.
+# Checkpoint names are therefore step counts of the FINE-TUNING run, not of the pre-training run.
+#
+# Replay: the human corpus is drawn with weight 4 and the mined corpus with weight 1 (integer repeat counts in OpenNMT-py's WeightedMixer, see pretrain_combined.4gpu.yaml's header), i.e. 80% human / 20% mined sentences.
+# Validation is the same bpcc-human-dev used by every other arm.
+# Architecture, vocabulary and batching are identical to the pre-training arms (they must be, the
+# weights are loaded).
+#
+# Ports: master_port 12361 is unique to this config so that fine-tuning jobs can share a node.
+
+## Where onmt_train's own working files go
+save_data: 128k-spm/opennmt/bpcc-ft-mined-human-replay/data
+
+# Vocabulary - same exported 128k vocab as every other training config.
+src_vocab: 128k-spm/vocab.128k.shared.txt
+tgt_vocab: 128k-spm/vocab.128k.shared.txt
+share_vocab: true
+src_vocab_size: 128000
+tgt_vocab_size: 128000
+
+# Same 200 cap as both single-source arms - see pretrain_human.2gpu.yaml /
+# pretrain_mined.4gpu.yaml headers for the real length-percentile justification
+# on each corpus; 200 comfortably covers both.
+src_seq_length: 200
+tgt_seq_length: 200
+
+# corpus_1 = human (weight 4), corpus_2 = mined (weight 1) -> 4:1 human:mined per-sentence
+# interleaving (20% mined replay, see header). Both corpora are already 128k-SPM-tokenized and tag-prepended
+# by the shared data pipeline; filtertoolong drops (not truncates) outliers. valid is the SAME
+# bpcc-human-dev used by every other arm.
+data:
+    corpus_1:
+        path_src: 128k-spm/data/bpcc-human.train.temp-sampled.0.5.128k.spm.src
+        path_tgt: 128k-spm/data/bpcc-human.train.temp-sampled.0.5.128k.spm.tgt
+        transforms: [filtertoolong]
+        weight: 4
+    corpus_2:
+        path_src: 128k-spm/data/bpcc-mined.train.temp-sampled.0.5.128k.spm.src
+        path_tgt: 128k-spm/data/bpcc-mined.train.temp-sampled.0.5.128k.spm.tgt
+        transforms: [filtertoolong]
+        weight: 1
+    valid:
+        path_src: 128k-spm/data/bpcc-human.dev.128k.spm.src
+        path_tgt: 128k-spm/data/bpcc-human.dev.128k.spm.tgt
+        transforms: [filtertoolong]
+
+# General opts
+log_file: 128k-spm/opennmt/bpcc-ft-mined-human-replay/checkpoints/log.txt
+save_model: 128k-spm/opennmt/bpcc-ft-mined-human-replay/checkpoints/model
+tensorboard_log_dir: 128k-spm/opennmt/bpcc-ft-mined-human-replay/checkpoints/tensorboard
+tensorboard: true
+
+# 0 = no moving average: saved checkpoints and validation use the raw weights
+average_decay: 0
+seed: 42
+report_every: 10
+
+# Fine-tuning length: 6,000 steps = ~4.75 passes over the human corpus (1,262.5 steps/epoch at
+# 262,144 tokens/step); the optimizer and step counter start at 0 (see header).
+train_steps: 6000
+accum_count: [4]
+accum_steps: [0]
+
+# Checkpoint AND validate every 200 steps, keep every checkpoint (-1 disables rotation). Patience
+# 10 validations = 2,000 steps (1.6 human epochs) without a new best human-dev perplexity.
+early_stopping: 10
+keep_checkpoint: -1
+valid_steps: 200
+save_checkpoint_steps: 200
+
+# 1 node, 4x A100, DDP (4 GPUs per node)
+world_size: 4
+gpu_ranks: [0, 1, 2, 3]
+master_port: 12361
+# timeout raised from 300s (5min) to 1800s (30min) after this exact config
+# died to a 300s NCCL ALLREDUCE watchdog timeout (Rank 3) after ~3.5h of
+# training - see pretrain_human.2gpu.yaml's header for the full incident
+# writeup (the same failure independently hit the human-2gpu arm too).
+timeout: 1800
+
+# Batching - identical OOM-safe values as both single-source arms (see
+# pretrain_human.2gpu.yaml's header for the full incident writeup).
+bucket_size: 262144
+num_workers: 0  # same precaution as both single-source arms
+batch_type: "tokens"
+batch_size: 16384
+valid_batch_size: 2048
+max_generator_batches: 32
+
+# Optimization - FINE-TUNING schedule, deliberately different from pre-training: fresh Adam
+# (reset_optim all), noam with learning_rate 0.0876 and warmup 1,500 gives a peak LR of
+# 0.0876 x 512^-0.5 x 1500^-0.5 = 1.0e-4 at step 1,500 (about one human epoch: 1,262.5 steps of
+# pure human data, ~1,580 at the 80% human share of the replay mix), then decays as step^-0.5
+# (7.1e-5 at step 3,000, 5.0e-5 at step 6,000). Under noam the warmup length also sets the peak, so
+# learning_rate is raised with the warmup to keep the same 1e-4 peak. Pre-training peaked at
+# 1.14e-3. The peak value is a first guess, not tuned.
+model_dtype: "fp32"
+optim: "adam"
+learning_rate: 0.0876
+warmup_steps: 1500
+decay_method: "noam"
+adam_beta2: 0.98
+max_grad_norm: 5
+label_smoothing: 0.1
+param_init: 0
+param_init_glorot: true
+normalization: "tokens"
+
+# Model - identical architecture to both single-source arms (12+12 layers,
+# d_model=512, d_ff=2048, 16 heads, 128k shared vocab, 153,807,872 params).
+# Must be identical for the data-ablation comparison to isolate the data
+# variable only.
+encoder_type: transformer
+decoder_type: transformer
+position_encoding: true
+enc_layers: 12
+dec_layers: 12
+heads: 16
+hidden_size: 512
+word_vec_size: 512
+transformer_ff: 2048
+
+# Same embedding tying as both single-source arms - see pretrain_human.2gpu.yaml's
+# header for the full explanation and verified parameter breakdown.
+share_embeddings: true
+share_decoder_embeddings: true
+
+dropout: [0.1]
+dropout_steps: [0]
+attention_dropout: [0.1]
+
+pos_ffn_activation_fn: "gelu"
