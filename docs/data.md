@@ -98,6 +98,7 @@ per-language files into one shuffled multilingual dataset each. They do two thin
 2. **Language tagging.** The target language is marked by a tag at the start of the *source* sentence. To translate
    into Hindi, the input is `<hi> the source sentence`. To translate into English it is `<en> the source sentence`.
    This is the scheme from Johnson et al. (2016). It lets one model serve all directions.
+   The tagged line is built by `tag_source` in `data/common/tokenization.py`. Evaluation and serving encode their sources through the same module, so the model always sees `['▁', '<xx>', ...]`, the format it was trained on.
 
 ### Language tags
 

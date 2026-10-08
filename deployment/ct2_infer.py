@@ -1,22 +1,34 @@
-"""Shared CTranslate2 inference module - the one code path for tag-prepend ->
-SPM-encode -> translate_batch -> SPM-decode, used three ways so it never
+"""Shared CTranslate2 inference module - the one code path for tag + SPM-encode ->
+translate_batch -> SPM-decode, used three ways so it never
 drifts into three near-duplicate implementations: as a CLI smoke-test tool
 (this file, run directly), imported by deployment/ct2_eval.py (the
 quantization/quality sweep), and imported by deployment/api/translator.py
 (the live API).
 
-Tag scheme matches training exactly (see docs/data.md, "Language tags"): a
-single target-language tag prepended to the SOURCE sentence before encoding
-(`<hi> some english text` -> Hindi output). xx->xx pivots through English at
+Tag scheme matches training exactly (see docs/data.md, "Language tags"): the
+target-language tag and the raw SOURCE sentence are encoded together, as one
+string ("<hi> some english text" -> ['▁', '<hi>', ...] -> Hindi output), by
+data/common/tokenization.py's encode_sources, the same function the
+evaluation uses. xx->xx pivots through English at
 the caller level (translate_pivot here, or the API's own two-call routing) -
 this module only ever does one direction per call.
 """
 
 import argparse
+import sys
 from pathlib import Path
 
 import ctranslate2
 import sentencepiece as spm
+
+# data/common/tokenization.py, the source encoding shared with training. In the Docker image (and
+# after deployment/stage_common.py in the repo) it is the generated copy in api/common/; when run
+# from the repo without staging, fall back to the original.
+try:
+    from api.common.tokenization import encode_sources
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "data"))
+    from common.tokenization import encode_sources
 
 
 class Ct2Translator:
@@ -37,10 +49,7 @@ class Ct2Translator:
         """texts: list of raw (untokenized) strings, all sharing the same
         target_tag (e.g. "<hi>"). Returns a list of detokenized translations,
         same order/length as texts."""
-        sources = []
-        for text in texts:
-            pieces = self.sp.encode(text, out_type=str)
-            sources.append([target_tag] + pieces)
+        sources = encode_sources(self.sp, target_tag, texts)  # same encoding as the training sources
         results = self.translator.translate_batch(
             sources, beam_size=beam_size, max_batch_size=max_batch_size,
             batch_type="tokens" if max_batch_size else "examples",

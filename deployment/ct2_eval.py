@@ -1,5 +1,6 @@
 """CTranslate2-native counterpart to evaluation/run_eval.py. Runs
-the full 44-direction IN22-Gen evaluation directly against a CTranslate2
+the full 44-direction IN22 evaluation (IN22-Gen by default, IN22-Conv with
+--test-set) directly against a CTranslate2
 model (ctranslate2.Translator.translate_batch), not onmt_translate - this is
 literally the code path the deployed API will use, not a proxy for it.
 Reuses evaluation/run_eval.py's score()/detokenize()/load_reference() and
@@ -31,6 +32,7 @@ from run_eval import (  # noqa: E402
 )
 
 import sentencepiece as spm  # noqa: E402
+from common.tokenization import encode_sources  # noqa: E402  (data/ is on sys.path via run_eval)
 
 SPM_MODEL_PATH = ROOT / "tokenizer" / "sweep" / "mixed" / "spm_128000.model"
 TEST_SET = "in22-gen"
@@ -43,9 +45,10 @@ def directions_44():
 
 
 def read_tagged_source(path: Path) -> list:
-    """Each line is already SPM-tokenized with the target tag prepended as
-    the first space-separated piece - exactly what translate_batch wants
-    (List[List[str]]), no re-encoding needed."""
+    """Each line is the SentencePiece encoding of "<xx> raw sentence" written by
+    evaluation/build_eval_pairs.py (it starts with ['▁', '<xx>'], like every
+    training source) - exactly what translate_batch wants (List[List[str]]),
+    no re-encoding needed."""
     with open(path, encoding="utf-8") as f:
         return [line.strip().split(" ") for line in f]
 
@@ -90,7 +93,7 @@ def evaluate_variant(translator: ctranslate2.Translator, sp, beam_size: int, bat
 
 
 def measure_speed(translator: ctranslate2.Translator, sp, sample_texts: list, beam_size: int) -> dict:
-    tagged = [["<en>"] + sp.encode(t, out_type=str) for t in sample_texts]
+    tagged = encode_sources(sp, "<en>", sample_texts)  # same encoding as the training sources
 
     # single-sentence latency
     latencies = []
@@ -116,6 +119,7 @@ def measure_speed(translator: ctranslate2.Translator, sp, sample_texts: list, be
 
 
 def main():
+    global TEST_SET
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--model-dir", required=True)
     ap.add_argument("--variant-name", required=True, help="label, e.g. float32/int16/int8")
@@ -127,7 +131,9 @@ def main():
     ap.add_argument("--hyp-dir", default=None,
                     help="also write each direction's detokenized hypotheses here (for significance tests)")
     ap.add_argument("--skip-speed", action="store_true", help="skip the latency/throughput measurement")
+    ap.add_argument("--test-set", default="in22-gen", choices=["in22-gen", "in22-conv"], help="IN22 test set to evaluate")
     args = ap.parse_args()
+    TEST_SET = args.test_set  # read by evaluate_variant and the speed sample
     hyp_dir = None
     if args.hyp_dir:
         hyp_dir = Path(args.hyp_dir)
@@ -152,7 +158,7 @@ def main():
 
     report = {
         "variant": args.variant_name,
-        "in22-gen": eval_results,
+        TEST_SET: eval_results,
         "speed": speed,
         "full_eval_wall_seconds": eval_elapsed,
     }

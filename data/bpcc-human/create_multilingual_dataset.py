@@ -34,6 +34,7 @@ from tqdm import tqdm
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # data/
 from common.languages import tag_for  # noqa: E402
+from common.tokenization import tag_source  # noqa: E402
 
 SPLIT_DATA_DIR = Path(__file__).resolve().parent / "splits"
 OUTPUT_DIR = Path(__file__).resolve().parent
@@ -58,14 +59,14 @@ def process_data(df):
         bidirectional_data.append({
             "src_lang": row.src_lang,
             "tgt_lang": row.tgt_lang,
-            "src_modified": tag_for(row.tgt_lang) + " " + row.src,
+            "src_modified": tag_source(tag_for(row.tgt_lang), row.src),
             "tgt": row.tgt,
             "dataset": "bpcc-human",
         })
         bidirectional_data.append({
             "src_lang": row.tgt_lang,
             "tgt_lang": row.src_lang,
-            "src_modified": tag_for(row.src_lang) + " " + row.tgt,
+            "src_modified": tag_source(tag_for(row.src_lang), row.tgt),
             "tgt": row.src,
             "dataset": "bpcc-human",
         })

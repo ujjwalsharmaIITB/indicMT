@@ -11,9 +11,9 @@ Weights will be linked from `<WEIGHTS_URL>`.
 | File | Purpose |
 |---|---|
 | `convert_to_ct2.py` | Converts a checkpoint to CTranslate2 in three CPU-usable variants: `float32`, `int16`, `int8`. |
-| `ct2_eval.py` | Runs the full 44-direction IN22-Gen evaluation directly through CTranslate2 for one variant: chrF++, BLEU, latency and throughput. |
-| `ct2_infer.py` | The one shared inference path (tag, SentencePiece encode, `translate_batch`, decode), used by `ct2_eval.py`, the API and as a command-line smoke test. |
-| `stage_common.py` | Copies `data/common/languages.py` into `deployment/api/common/` for the container build. |
+| `ct2_eval.py` | Runs the full 44-direction IN22 evaluation (IN22-Gen by default, `--test-set in22-conv`) directly through CTranslate2 for one variant: chrF++, BLEU, latency and throughput. |
+| `ct2_infer.py` | The one shared inference path (tag and SentencePiece-encode with `data/common/tokenization.py`, `translate_batch`, decode), used by the API and as a command-line smoke test. `ct2_eval.py` uses the same encoding function. |
+| `stage_common.py` | Copies `data/common/languages.py` and `data/common/tokenization.py` into `deployment/api/common/` for the container build. |
 | `api/` | FastAPI app: `main.py`, `schemas.py`, the direct/pivot router `translator.py`, `languages.py`. |
 | `frontend/` | Plain HTML, CSS and JS, served by the same process. No build step. |
 | `stress_test.py` | asyncio and httpx load generator (p50, p95, p99 and requests per second). |

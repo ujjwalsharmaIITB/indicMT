@@ -43,7 +43,7 @@ evaluation/llm_judge/results/
 **/*.bin
 # staged CT2 model and SPM copy used as the Docker build input
 deployment/model/
-# mechanical copy of data/common/languages.py (see deployment/stage_common.py)
+# mechanical copies of data/common/languages.py and tokenization.py (see deployment/stage_common.py)
 deployment/api/common/
 # optional score file for the frontend's Benchmarks tab
 deployment/frontend/benchmarks.json

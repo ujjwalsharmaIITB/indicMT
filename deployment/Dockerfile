@@ -1,7 +1,7 @@
 # Build context is deployment/ itself, not the repo root (data and training
 # outputs are very large - a root-context build would send that whole tree
 # to the build daemon on every build). This means deployment/api/common/
-# (the mechanical copy of data/common/languages.py) and deployment/model/
+# (the mechanical copies of data/common/languages.py and tokenization.py) and deployment/model/
 # (the staged CT2 model + SPM copy) must be populated BEFORE running
 # `podman build` - see deployment/stage_common.py and
 # deployment/convert_to_ct2.py / README.md for the staging steps.

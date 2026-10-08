@@ -30,6 +30,7 @@ data/
   common/languages.py    the 22-language list and the tag dictionary (including <en>)
   common/scripts.py      Unicode script ranges used by the script-consistency filter
   common/auth.py         Hugging Face token resolution
+  common/tokenization.py the tagged source format and its SentencePiece encoding, shared with evaluation and serving
   bpcc-human/            gold, human-translated data (configs: bpcc-seed-latest, ilci)
   bpcc-mined/            mined data (configs: comparable, samanantar-filtered, nllb-filtered)
   in22/                  IN22-Gen and IN22-Conv (test sets) and the fertility corpus

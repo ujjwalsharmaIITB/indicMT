@@ -42,6 +42,7 @@ from tqdm import tqdm
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # data/
 from common.languages import tag_for  # noqa: E402
+from common.tokenization import tag_source  # noqa: E402
 from common.scripts import is_script_consistent  # noqa: E402
 
 RAW_DATA_DIR = Path(__file__).resolve().parent / "raw"
@@ -80,14 +81,14 @@ def bidirectional_expand(rows):
         data.append({
             "src_lang": src_lang,
             "tgt_lang": tgt_lang,
-            "src_modified": tag_for(tgt_lang) + " " + src,
+            "src_modified": tag_source(tag_for(tgt_lang), src),
             "tgt": tgt,
             "dataset": "bpcc-mined",
         })
         data.append({
             "src_lang": tgt_lang,
             "tgt_lang": src_lang,
-            "src_modified": tag_for(src_lang) + " " + tgt,
+            "src_modified": tag_source(tag_for(src_lang), tgt),
             "tgt": src,
             "dataset": "bpcc-mined",
         })

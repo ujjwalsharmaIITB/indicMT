@@ -18,7 +18,7 @@ published baselines, and tests whether quantization changes translations. The fu
 
 | File | Purpose |
 |---|---|
-| `build_eval_pairs.py` | Builds the 44 direction-specific source files per test set: the target tag is prepended to the already-encoded test files. Run once. |
+| `build_eval_pairs.py` | Builds the 44 direction-specific source files per test set: each raw test sentence is tagged and SentencePiece-encoded exactly as the training sources were (`data/common/tokenization.py`). Run once, and again if your files were built before this encoding fix. |
 | `run_eval.py` | Evaluates one OpenNMT-py checkpoint: `onmt_translate`, detokenize with the 128k SentencePiece model, score against the untokenized references, write results. |
 | `baselines.py` | Published baseline scores (IN22-Gen, chrF++) used for comparison. |
 | `quant_significance.py` | Paired bootstrap test of int16 and int8 against float32 (see [`../docs/deployment.md`](../docs/deployment.md)). |
@@ -28,7 +28,7 @@ published baselines, and tests whether quantization changes translations. The fu
 ## Run
 
 ```bash
-# once: build the tagged source files
+# once: build the tagged source files (needs the 128k SentencePiece model and the raw IN22 files from Job8)
 python evaluation/build_eval_pairs.py
 
 # one checkpoint (Job14: 1 GPU)
