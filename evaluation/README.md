@@ -22,6 +22,8 @@ published baselines, and tests whether quantization changes translations. The fu
 | `run_eval.py` | Evaluates one OpenNMT-py checkpoint: `onmt_translate`, detokenize with the 128k SentencePiece model, score against the untokenized references, write results. |
 | `baselines.py` | Published baseline scores (IN22-Gen, chrF++) used for comparison. |
 | `quant_significance.py` | Paired bootstrap test of int16 and int8 against float32 (see [`../docs/deployment.md`](../docs/deployment.md)). |
+| `paired_significance.py` | Paired bootstrap test between any two systems' IN22 translations, per direction and pooled per bucket (e.g. IndicMT against IndicTrans2). |
+| `run_eval_indictrans2.py` | Evaluates AI4Bharat's IndicTrans2 1B models with the same scoring as `run_eval.py`, so the comparison in the docs can be reproduced (see "Comparing two systems"). Needs its own environment (Job24). |
 | `package_translations.py` | Packages a checkpoint's IN22 translations into one `.tar.gz` (see "Translations"). |
 | `llm_judge/` | LLM-as-judge scoring. |
 
@@ -87,6 +89,40 @@ exists. Systems marked partial (translategemma) cover only 16 of the 22 language
 per bucket, with a Bonferroni correction. Job21 runs it after re-translating IN22-Gen with each quantized variant. On the
 current best model, int16 is indistinguishable from float32. int8 costs 0.13 chrF++ (en→xx) and 0.06 (xx→en). See
 [`../docs/deployment.md`](../docs/deployment.md).
+
+## Comparing two systems
+
+`paired_significance.py` runs the same paired bootstrap between any two systems whose detokenized translations follow
+`run_eval.py`'s naming (`<test-set>.<src>-<tgt>.hyp.txt`):
+
+```bash
+python evaluation/paired_significance.py \
+  --baseline other=evaluation/results/<other-system> \
+  --system indicmt=evaluation/results/bpcc-ft-combined-human/model_step_1800 \
+  --test-set in22-gen --out evaluation/results/significance/indicmt-vs-other
+```
+
+It writes `significance.json` and `significance.md`: pooled scores and p values, the number of directions where each
+system is significantly better, and the count after Bonferroni correction.
+
+### Reproducing the IndicTrans2 scores
+
+The docs report IndicTrans2 1B under our protocol (beam 5, corpus-level chrF++), not the model-card values.
+`run_eval_indictrans2.py` produces those scores from the raw IN22 text. It runs `ai4bharat/indictrans2-en-indic-1B`
+for en→xx and `ai4bharat/indictrans2-indic-en-1B` for xx→en with IndicTransToolkit pre- and post-processing, then scores
+the outputs with `run_eval.py`'s own functions. It writes to `evaluation/results/indictrans2-1B/` in the same layout, so
+the output can be the `--baseline` above.
+
+It needs a **separate environment** from OpenNMT-py: `transformers==4.46.3` and `IndicTransToolkit==1.1.1` on top of
+torch, sacrebleu and sentencepiece, plus a GPU. The two models are gated, so accept their terms on Hugging Face first.
+
+```bash
+python evaluation/run_eval_indictrans2.py --bucket "en->xx" --gpu 0
+python evaluation/run_eval_indictrans2.py --bucket "xx->en" --gpu 1
+python evaluation/run_eval_indictrans2.py --merge        # scores.json and report.md
+```
+
+`scripts/slurm/evaluation_indictrans2.sh` (Job24) runs both buckets on two GPUs and merges them.
 
 ## Translations
 

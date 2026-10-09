@@ -55,6 +55,7 @@ Things the scripts assume or leave to you:
 | Job21 | `deployment_quant_significance.sh` | Quantization significance test | 24 CPUs, 48 GB, 12 h | Job20 output | `.../ct2/<checkpoint>/significance/` |
 | Job22 | `deployment_stress_test.sh` | API stress test (not yet run) | 8 CPUs, 16 GB, 3 h | staged model in `deployment/model/` | `logs/stress_test_results.json` |
 | Job23 | `deployment_podman_smoke.sh` | Container build check (blocked, see below) | 4 CPUs, 8 GB, 1 h | staged model | log only |
+| Job24 | `evaluation_indictrans2.sh` | IndicTrans2 1B baseline on IN22, scored like our own checkpoints | 2 GPUs, 16 CPUs, 64 GB, 12 h | IN22 raw files (Job8 output), gated IndicTrans2 models, a separate environment | `evaluation/results/indictrans2-1B/` |
 
 ## Notes
 
