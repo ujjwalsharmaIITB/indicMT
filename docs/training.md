@@ -1,8 +1,8 @@
 # Training
 
 This page describes the model, the three pre-training runs ("arms"), why we stopped them by hand, how we picked
-checkpoints, the fine-tuning runs, the study of encoder and decoder depth, and what we learned about English-to-Indic
-quality falling late in training. Configs are in [`../training/configs/`](../training/configs/).
+checkpoints, a source-encoding mismatch that made English-to-Indic quality appear to fall late in training, the
+fine-tuning runs and the study of encoder and decoder depth. Configs are in [`../training/configs/`](../training/configs/).
 Training uses OpenNMT-py 3.5.1.
 
 "Job9" and similar names refer to the batch-job templates in [`../scripts/README.md`](../scripts/README.md).
@@ -113,18 +113,21 @@ sentences, repeated.
 
 ## 4. Stopping by hand
 
-None of the arms converged by validation loss. We stopped all three by hand, because **IN22 English-to-Indic quality
-had been falling for many checkpoints while validation perplexity kept improving**.
+None of the arms converged by validation loss. We stopped all three by hand, because IN22 English-to-Indic chrF++
+appeared to fall for many checkpoints while validation perplexity kept improving.
 
-| Arm | Stopped at | Notes |
-|---|---|---|
-| human | step 20,800 (16.5 epochs) | plateau 44.1 to 44.3 chrF++ between steps 7,600 and 11,400; 43.09 at 19,900 |
-| mined | step 35,000 (1.28 mined epochs) | stuck at 30 to 32 after step 3,000; fell after 21,800 (29.34 at 32,700) |
-| combined | step 37,700 (1.38 mined epochs) | peak 44.32 at step 10,900; fell at every checkpoint after 13,600, to 39.08 at 35,500 |
+| Arm | Stopped at |
+|---|---|
+| human | step 20,800 (16.5 epochs) |
+| mined | step 35,000 (1.28 mined epochs) |
+| combined | step 37,700 (1.38 mined epochs) |
 
-Peak IN22-Gen English-to-Indic chrF++: combined 44.32 (step 10,900) and human 44.33 (step 10,100). Indic-to-English
-stayed flat or rose slightly in every arm. This stop replaced the planned rule (early stopping). A longer
-low-learning-rate tail was not tested.
+**That fall was an artifact of the evaluation.** The evaluation built its sources with a slightly different
+SentencePiece encoding from training (section 6). Re-scored with the training encoding, English-to-Indic keeps rising
+to the end of training: the combined arm at step 37,700 scores 46.4 chrF++ on IN22-Gen English-to-Indic, not 36.1, and
+the human arm at step 20,800 scores 45.3, not 42.9. For the mined and combined arms the best checkpoint by the
+selection rule is now the last one (steps 35,000 and 37,700), so both were still improving when stopped. This stop
+replaced the planned rule (early stopping). A longer run was not tested.
 
 **chrF++** is a character n-gram F-score (with word n-grams of order 2). It is the main automatic metric here. See
 [`evaluation.md`](evaluation.md).
@@ -132,48 +135,40 @@ low-learning-rate tail was not tested.
 ## 5. Selecting checkpoints
 
 One fixed rule picks the checkpoint to carry forward: **the highest mean chrF++ over IN22-Gen and IN22-Conv, in both
-directions.** For the combined arm that is step 13,600 (Gen 43.84 / 53.80, Conv 39.56 / 49.10). The best by
-English-to-Indic alone would have been step 10,900. For the mined arm it is step 24,600 (Gen 30.45 / 44.24, Conv
-26.89 / 38.79). Its English-to-Indic-only best, step 4,100, lies in a noisy early band and is much weaker in the other
-direction.
+directions** (the "mean of four"). The fine-tunes in section 7 start from combined step 13,600 and mined step 24,600,
+which this rule picked under the old, mismatched scores. Under the corrected scores, the rule picks step 37,700 for the
+combined arm (48.44), step 35,000 for the mined arm (35.96) and step 13,900 for the human-only arm (43.00). Fine-tunes
+from those later checkpoints have not been run.
 
 This rule uses the IN22 test sets for model selection, so IN22 scores of selected checkpoints carry a **small
-optimistic bias**. Every table in these docs is a single seed.
+optimistic bias**. Every table in these docs is a single seed. Two extra seeds of the human-only arm reproduce its
+chrF++ curve (38.3, 38.3 and 38.5 English-to-Indic on IN22-Gen at step 2,000).
 
-## 6. Why English-to-Indic declines after about step 13,000
+## 6. Source encoding, and the English-to-Indic decline that was not
 
-We compared the English-to-Indic outputs of the best checkpoint and the one-epoch checkpoint (27,000, or 27,300 for
-12+12) for the three combined depths, and of the human-only checkpoints 11,700 and 19,900.
+Training sources are written as `<xx> text` and SentencePiece-encoded as one string. With SentencePiece's default
+dummy prefix and the tags registered as user-defined pieces, that gives `['▁', '<xx>', '▁word', ...]`: a lone `▁`
+piece, then the tag. Evaluation, CTranslate2 serving and our analyses instead encoded the sentence and then put the tag
+in front (`['<xx>', '▁word', ...]`), which drops the leading `▁`. The model never saw that format in training.
 
-- **It is not a decoding artifact.** OpenNMT-py's default length penalty favours longer outputs. Re-decoding with no
-  length penalty changed English-to-Indic chrF++ by at most 0.16, and the outputs stayed as long. The change is in the
-  model.
-- **Outputs get longer and loop more.** The hypothesis-to-reference character ratio (macro over 22 languages,
-  IN22-Gen) rises from 1.04 to 1.14 (12+12), 1.02 to 1.10 (12+18) and 1.01 to 1.10 (18+18). On IN22-Conv, sentences
-  with a repetition loop (fewer than 60% distinct word trigrams, 8 or more words) rise from about 1% to 4.4 to 7.5%.
-  Output in the wrong script stays under 1%, and source copying stays at 0.1%.
-- **Lengthening alone does not explain it.** Human-only training lengthens just as much (1.01 to 1.10) but loses only
-  1.3 chrF++ on Gen English-to-Indic.
-- **The extra loss sits on languages with little or no mined data.** Mean English-to-Indic chrF++ change from the best
-  to the one-epoch checkpoint:
+The fix is one shared module, `data/common/tokenization.py`. The data pipeline, `evaluation/build_eval_pairs.py`,
+`deployment/ct2_infer.py` and `deployment/ct2_eval.py` now all use it. It reproduces 20,000 lines each of the encoded
+human training, mined training and dev files exactly, and it rejects any source that does not start with
+`['▁', '<xx>']`.
 
-| Mined data per language | 12+12 Gen / Conv | 12+18 Gen / Conv | 18+18 Gen / Conv | Human-only Gen / Conv |
-|---|---|---|---|---|
-| none (doi, gom, mni, sat, sd) | -3.20 / -5.51 | -2.59 / -3.69 | -3.73 / -3.57 | -1.55 / -0.64 |
-| under 6M words (as, br, ks, mai, sa) | -3.23 / -4.99 | -3.00 / -3.57 | -3.05 / -3.43 | -1.31 / -0.50 |
-| 19 to 27M words (ne, or) | -2.61 / -3.44 | -2.98 / -2.60 | -2.68 / -1.57 | -1.02 / -0.43 |
-| over 56M words (bn, gu, hi, kn, ml, mr, pa, ta, te, ur) | -1.94 / -1.85 | -1.71 / -1.40 | -2.06 / -1.72 | -1.32 / -0.66 |
+We re-scored 564 checkpoints. On average, English-to-Indic rose by 1.96 chrF++ on IN22-Gen and 2.22 on IN22-Conv;
+Indic-to-English rose by 0.02 and 0.37. The effect grows with training length:
 
-In the combined runs, languages without mined data lose about twice as much as the large ones. In human-only training
-the loss is small and the same for every group.
+| Checkpoint | IN22-Gen en→xx, old encoding | IN22-Gen en→xx, training encoding |
+|---|---|---|
+| combined 12+12, step 37,700 | 36.1 | 46.4 |
+| combined 12+18, step 49,000 | 34.8 | 46.6 |
+| human-only, step 20,800 | 42.9 | 45.3 |
 
-Our reading, which is **not yet tested**: in the 8:2 mix, languages without mined data learn English-to-Indic only
-from the 20% human stream, which by step 27,000 has been seen about 4.3 times (2.1 times at step 13,000). Meanwhile
-80% of updates go to mined data of the large languages. Continued training moves the shared decoder toward the mined
-data and away from what the human stream taught for the small languages. For all languages it also learns to emit
-longer outputs. Validation perplexity is measured with teacher forcing, so it does not see length or loops in free
-decoding, which is why it kept falling. The peak step is not tied to an epoch: all combined depths and the human-only
-run peak between steps 10,000 and 14,000.
+So the earlier finding that English-to-Indic declines late in pre-training was an artifact of the mismatch. The
+analysis built on it (output length, repetition loops and per-language losses) used outputs from the mismatched inputs
+and has been withdrawn. In the training encoding, English-to-Indic keeps rising to the end of training. The lesson:
+one function owns the input format, and every entry point checks it.
 
 ## 7. Fine-tuning on human data
 
@@ -191,40 +186,36 @@ Start points: combined from step 13,600, mined from step 24,600. Validation perp
 51.25 to 12.72 (mined to human, with replay) and from 12.26 to 10.76 (combined to human, with replay). That is the
 fine-tuning domain, so it is not evidence of better IN22 quality. We scored IN22 chrF++ at every 200 steps.
 
-| Run | Best step | Gen en-xx | Gen xx-en | Conv en-xx | Conv xx-en | Gen 44-direction mean |
+Best checkpoint of each run by the selection rule, and the release checkpoint:
+
+| Run | Step | Gen en-xx | Gen xx-en | Conv en-xx | Conv xx-en | Mean of four |
 |---|---|---|---|---|---|---|
-| combined, start (step 13,600) | - | 43.84 | 53.80 | 39.56 | 49.10 | 48.82 |
-| **combined to human, no replay (current best)** | **1,800** | **45.36** | 53.73 | **41.06** | **50.04** | **49.54** |
-| combined to human + 20% replay | 2,000 | 44.89 | 53.89 | 40.46 | 49.66 | 49.39 |
-| mined, start (step 24,600) | - | 30.45 | 44.24 | 26.89 | 38.79 | 37.35 |
-| mined to human, no replay | 4,400 | 39.73 | 53.16 | 36.29 | 49.24 | 46.45 |
-| mined to human + 20% replay | 5,800 | 39.53 | 53.84 | 36.20 | 49.45 | 46.69 |
-| human-only pre-training, step 11,400 (reference) | - | 44.05 | 44.08 | | | 44.06 |
+| combined to human, no replay | 1,000 | 46.80 | 54.04 | 42.80 | 50.66 | 48.58 |
+| **combined to human, no replay (release model)** | **1,800** | **46.95** | **53.69** | **42.97** | **50.38** | **48.50** |
+| combined to human + 20% replay | 2,800 | 46.64 | 53.85 | 42.32 | 50.09 | 48.22 |
+| mined to human, no replay | 5,800 | 47.04 | 54.13 | 43.00 | 50.61 | 48.70 |
+| mined to human + 20% replay | 5,400 | 46.65 | 54.47 | 42.03 | 50.28 | 48.36 |
+| human-only pre-training (reference) | 13,900 | 45.21 | 43.80 | 41.67 | 41.31 | 43.00 |
 
 Findings:
 
-- **Combined to human without replay, step 1,800 is the current best model.** It is best of the four runs on every
-  IN22 bucket except IN22-Gen Indic-to-English, where both replay runs are slightly higher.
-- **For the combined start, replay does not help.** Without replay the peak is +0.47 English-to-Indic on IN22-Gen and
-  +0.60 / +0.38 on IN22-Conv. The combined model already saw mined data for 13,600 steps.
-- **Replay protects Indic-to-English late in fine-tuning.** Without replay, combined Indic-to-English falls after its
-  peak (53.73 at step 1,800 to 52.67 at 6,000). With replay it stays near 53.5.
-- **Combined fine-tuning peaks early,** around steps 1,800 to 2,000 (about 1.4 human epochs). The 6,000-step budget
-  was about three times what was needed. Mined fine-tuning keeps improving until about step 3,400.
-- **Mined to human gains about 9 points in both directions** but stays about 5.6 English-to-Indic below the combined
-  route.
-- **Indic-to-English is set by the mined data.** Every model that saw mined data scores 53 to 54 on IN22-Gen. The
-  human-only arm scores 44.
-
-### Why mined to human stays behind
-
-Indic-to-English is equal for the two routes, so the gap is in *writing* Indic, not reading it. The English-to-Indic
-gap is largest where the mined model had little or no data. The five languages without mined data average a +9.6 gap
-(Manipuri +16.0, Santali +12.3), the 17 with mined data +4.5, and across those 17 the gap falls as mined data grows
-(Pearson r = -0.81 against log10 of the mined-to-human ratio). The mined model could barely write Manipuri or Santali
-before fine-tuning (0.9 and 0.8 chrF++), and the gentle fine-tune does not fully teach them. The main cause is missing
-exposure to writing low-resource languages, not noisy mined targets. A residual gap of +2.4 to +4 on well-covered
-languages is unexplained. The per-language table is in [`evaluation.md`](evaluation.md).
+- **Combined to human without replay, step 1,800, is the release model.** Under the corrected scores it is not the
+  top checkpoint by the selection rule. Step 1,000 of the same run (48.58), mined to human at step 5,800 (48.70),
+  12+18 to human at step 1,400 (48.59, section 8) and 18+18 combined pre-training at step 38,000 (48.70) are all
+  within 0.2 of it on the mean of four. These are single-seed differences without a significance test, and we kept
+  the release model.
+- **Replay does not help.** Without replay the mean of four is higher for both starts (combined 48.58 against 48.22,
+  mined 48.70 against 48.36). Only for the mined start does replay give a higher IN22-Gen Indic-to-English score
+  (54.47 against 54.13).
+- **Combined fine-tuning peaks early** (step 1,000 without replay, 2,800 with replay). **Mined fine-tuning peaks
+  late** (steps 5,800 and 5,400 of the 6,000-step budget).
+- **Mined to human ends level with combined to human** (IN22-Gen English-to-Indic 47.04 against 46.80). An earlier
+  version of this page found the mined route well behind on English-to-Indic and analysed why, per language. That gap
+  came from the source-encoding mismatch (section 6), and the analysis has been withdrawn.
+- **Indic-to-English needs both data sources.** Every model trained on mined and human data scores 53.69 to 55.07 on
+  IN22-Gen. The human-only arm scores 43.80 and the mined-only arm 44.20.
+- **Pre-training alone gets as far.** The last combined pre-training checkpoint (step 37,700, 48.44) is level with the
+  fine-tuned models. The fine-tunes started from step 13,600, chosen under the old encoding.
 
 ## 8. Architecture study
 
@@ -239,22 +230,26 @@ never triggered: 12+18 at step 49,700 and 18+18 at step 45,670. Both are past th
 stage 1 is treated as complete. All 40 checkpoints of each still on disk were scored on IN22. The best checkpoint by
 the selection rule:
 
-| Shape | Parameters | Best step | Mean | Gen en-xx | Gen xx-en | Conv en-xx | Conv xx-en | Mean at step ~27,000 |
-|---|---|---|---|---|---|---|---|---|
-| 12+12 | 153.8M | 13,600 | 46.57 | 43.84 | 53.80 | 39.56 | 49.10 | 45.32 |
-| 12+18 | 179.0M | 13,000 | 46.77 | 44.38 | 53.41 | 40.24 | 49.04 | 45.45 |
-| 18+18 | 197.9M | 13,000 | 47.08 | 44.33 | 54.00 | 40.29 | 49.69 | 45.82 |
-| *human-only 12+12* | *153.8M* | *11,700* | *42.85* | *44.43* | *44.31* | *40.48* | *42.17* | - |
+| Shape | Parameters | Best step | Mean of four | Gen en-xx | Gen xx-en | Conv en-xx | Conv xx-en |
+|---|---|---|---|---|---|---|---|
+| 12+12 | 153.8M | 37,700 | 48.44 | 46.36 | 55.05 | 41.81 | 50.55 |
+| 12+18 | 179.0M | 38,000 | 48.38 | 46.65 | 54.51 | 42.23 | 50.13 |
+| 18+18 | 197.9M | 38,000 | 48.70 | 46.79 | 55.07 | 42.32 | 50.62 |
+| *human-only 12+12* | *153.8M* | *13,900* | *43.00* | *45.21* | *43.80* | *41.67* | *41.31* |
 
-A deeper decoder (12+12 to 12+18) adds +0.20 on the mean, mostly English-to-Indic. A deeper encoder on top (12+18 to
-18+18) adds +0.31, mostly Indic-to-English. These are pre-fine-tuning numbers without a significance test, and
-checkpoint selection used the test sets. All three shapes peak at the same point (13,000 to 13,600) and lose
-English-to-Indic afterwards in the same way (section 6), so depth does not change when to stop. Against human-only
-pre-training, the combined shapes are about 4 chrF++ higher on the mean, all from Indic-to-English.
+The 12+12 run was stopped at step 37,700, so it cannot be compared beyond that point. A deeper decoder (12+12 to
+12+18) does not help on the mean (−0.06): it gains English-to-Indic (+0.29 Gen, +0.42 Conv) and loses Indic-to-English
+(−0.54 Gen, −0.42 Conv). 18+18 is the best shape, +0.26 over 12+12 on the mean. These are pre-fine-tuning numbers
+without a significance test, and checkpoint selection used the test sets. An earlier version of this section said all
+three shapes peak at steps 13,000 to 13,600 and lose English-to-Indic afterwards. That came from the source-encoding
+mismatch (section 6). Against human-only pre-training, the combined shapes are 5.4 to 5.7 higher on the mean, mostly
+from Indic-to-English.
 
-**Stage 2** (human fine-tuning without replay from step 13,000 of each deeper run, configs
-`finetune_combined_12e18d_human.4gpu.yaml` and `finetune_combined_18e18d_human.4gpu.yaml`) is **queued, not yet
-finished**. The release model will be chosen after it finishes. Wider depth sweeps are planned future work.
+**Stage 2** is human fine-tuning without replay from step 13,000 of each deeper run (configs
+`finetune_combined_12e18d_human.4gpu.yaml` and `finetune_combined_18e18d_human.4gpu.yaml`). For 12+18 it is complete:
+the best checkpoint is step 1,400, mean of four 48.59 (47.08 / 53.73 on IN22-Gen, 43.15 / 50.39 on IN22-Conv). That is
+level with 12+12 to human (48.58 at step 1,000). Stage 2 results for 18+18 are not reported yet. The release model
+stays the 12+12 model. Wider depth sweeps are planned future work.
 
 ## 9. Checkpoints and outputs
 

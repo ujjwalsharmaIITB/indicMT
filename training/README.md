@@ -1,7 +1,7 @@
 # training: data preparation, pre-training and fine-tuning
 
 This directory prepares the OpenNMT-py training files, holds all training configs, and describes how the model was
-trained. The full discussion (arms, stopping, the English-to-Indic decline, fine-tuning, the architecture study) is in
+trained. The full discussion (arms, stopping, the source-encoding fix, fine-tuning, the architecture study) is in
 [`../docs/training.md`](../docs/training.md).
 
 The model is a **153,807,872-parameter Transformer** (12 encoder + 12 decoder layers, `d_model` 512, `d_ff` 2048,
@@ -71,24 +71,21 @@ early stopping, so start fresh when you need a clean record.
 
 ### Stopping and selecting
 
-None of the arms converged by validation loss. We **stopped all three by hand**, because IN22 English-to-Indic quality had
-been falling for many checkpoints while validation perplexity kept improving.
+None of the arms converged by validation loss. We **stopped all three by hand**, because IN22 English-to-Indic quality
+appeared to be falling while validation perplexity kept improving. That fall was an artifact: the evaluation encoded
+its sources slightly differently from training (a missing leading `▁` piece before the language tag). This is fixed in
+`data/common/tokenization.py`; see [`../docs/training.md`](../docs/training.md), section 6. With the training encoding,
+English-to-Indic keeps rising to the end of training.
 
-| Arm | Stopped at | Peak IN22-Gen en→xx chrF++ |
+| Arm | Stopped at | Best checkpoint (mean of the four IN22 buckets) |
 |---|---|---|
-| human | step 20,800 (16.5 epochs) | 44.33 at step 10,100 |
-| mined | step 35,000 (1.28 mined epochs) | stuck at 30 to 32 after step 3,000 |
-| combined | step 37,700 (1.38 mined epochs) | 44.32 at step 10,900; 39.08 at 35,500 |
+| human | step 20,800 (16.5 epochs) | step 13,900, 43.00 |
+| mined | step 35,000 (1.28 mined epochs) | step 35,000, 35.96 |
+| combined | step 37,700 (1.38 mined epochs) | step 37,700, 48.44 |
 
-Checkpoints are selected by one rule: the highest mean chrF++ over IN22-Gen and IN22-Conv, in both directions. For the
-combined arm that is step 13,600, and for the mined arm step 24,600. This uses the test sets for selection, so later IN22
-numbers carry a small optimistic bias.
-
-**Why English-to-Indic declines.** In the 8:2 mix, languages without mined data learn English-to-Indic only from the 20%
-human stream. Continued training moves the shared decoder toward the mined data of the large languages and makes outputs
-longer, with more repetition loops. It is not a decoding artifact (re-decoding without the length penalty changes
-chrF++ by at most 0.16). Validation perplexity does not see it, because it is measured with teacher forcing. This is our
-reading, not a tested conclusion. The analysis is in [`../docs/training.md`](../docs/training.md).
+Checkpoints are selected by one rule: the highest mean chrF++ over IN22-Gen and IN22-Conv, in both directions. The
+fine-tunes below start from combined step 13,600 and mined step 24,600, which the rule picked under the old encoding.
+This uses the test sets for selection, so later IN22 numbers carry a small optimistic bias.
 
 ## Step 3: fine-tuning on human data
 
@@ -98,7 +95,7 @@ rate of 1e-4, 6,000 steps, checkpoint every 200 steps.
 
 | Config | Starts from | Data |
 |---|---|---|
-| `finetune_combined_human.4gpu.yaml` | combined, step 13,600 | human only (**current best model**, best step 1,800) |
+| `finetune_combined_human.4gpu.yaml` | combined, step 13,600 | human only (**release model**, step 1,800) |
 | `finetune_combined_human_replay.4gpu.yaml` | combined, step 13,600 | human + 20% mined |
 | `finetune_mined_human.4gpu.yaml` | mined, step 24,600 | human only |
 | `finetune_mined_human_replay.4gpu.yaml` | mined, step 24,600 | human + 20% mined |
@@ -110,17 +107,20 @@ sbatch -p <partition> \
 ```
 
 The script loads the weights with `--reset_optim all` (new optimizer, step counter back to 0) and checks that a
-checkpoint was written by the run. IN22-Gen chrF++ (en→xx / xx→en) of the best checkpoint of each run:
+checkpoint was written by the run. IN22-Gen chrF++ (en→xx / xx→en) of the best checkpoint of each run by the
+selection rule, and of the release checkpoint:
 
-| Run | Best step | en→xx / xx→en |
+| Run | Step | en→xx / xx→en |
 |---|---|---|
-| combined → human, no replay | 1,800 | **45.36** / 53.73 |
-| combined → human + replay | 2,000 | 44.89 / 53.89 |
-| mined → human, no replay | 4,400 | 39.73 / 53.16 |
-| mined → human + replay | 5,800 | 39.53 / 53.84 |
+| combined → human, no replay (release model) | 1,800 | **46.95** / 53.69 |
+| combined → human, no replay (best by the rule) | 1,000 | 46.80 / 54.04 |
+| combined → human + replay | 2,800 | 46.64 / 53.85 |
+| mined → human, no replay | 5,800 | 47.04 / 54.13 |
+| mined → human + replay | 5,400 | 46.65 / 54.47 |
 
-Replay does not help the combined start. Combined fine-tuning peaks early (steps 1,800 to 2,000). Mined fine-tuning gains
-about 9 points but stays about 5.6 en→xx behind, mostly in languages with no mined data.
+Replay does not help either start. Combined fine-tuning peaks early. Mined fine-tuning peaks late and ends level with
+the combined route. Several checkpoints are within 0.2 chrF++ of the release model on the mean of the four IN22
+buckets; see [`../docs/training.md`](../docs/training.md), section 7.
 
 ## Step 4: architecture study
 
@@ -130,15 +130,16 @@ The current best recipe is repeated with **12 encoder + 18 decoder** layers (178
 | Stage | Configs | Job | Status |
 |---|---|---|---|
 | 1. Combined pre-training | `pretrain_combined_12e18d.4gpu.yaml`, `pretrain_combined_18e18d.4gpu.yaml` | Job12 | done |
-| 2. Human fine-tune, no replay | `finetune_combined_12e18d_human.4gpu.yaml`, `finetune_combined_18e18d_human.4gpu.yaml` | Job13 | queued |
+| 2. Human fine-tune, no replay | `finetune_combined_12e18d_human.4gpu.yaml`, `finetune_combined_18e18d_human.4gpu.yaml` | Job13 | 12+18 done; 18+18 not yet reported |
 
 ```bash
 sbatch -p <partition> --export=ALL,CFG=pretrain_combined_12e18d,RUN=bpcc-combined-12e18d \
   scripts/slurm/training_pretrain_arch.sh
 ```
 
-Stage 1 results (best checkpoint by mean IN22 chrF++): 12+12 46.57 (step 13,600), 12+18 46.77 (step 13,000), 18+18 47.08
-(step 13,000). Depth does not change when to stop. The release model will be chosen after stage 2.
+Stage 1 results (best checkpoint by the mean of the four IN22 buckets): 12+12 48.44 (step 37,700), 12+18 48.38 (step
+38,000), 18+18 48.70 (step 38,000). Stage 2 for 12+18 reaches 48.59 at step 1,400, level with 12+12 → human. The
+release model stays the 12+12 model.
 
 Outputs of all training steps are written under `128k-spm/` and are not tracked by git. Next:
 [`../evaluation/README.md`](../evaluation/README.md).

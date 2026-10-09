@@ -4,10 +4,10 @@ This page reports how IndicMT is scored and how it compares with published syste
 [`../evaluation/`](../evaluation/). The LLM-judge protocol is in
 [`../evaluation/llm_judge/README.md`](../evaluation/llm_judge/README.md).
 
-**Reading the numbers.** The checkpoint reported as the *current best model* was selected using the IN22 test sets
-(see "Selection" below), so its scores carry a small optimistic bias. Every result is a **single seed**. The release
-model will be chosen after the deeper architectures (12+18 and 18+18) finish fine-tuning, and the tables will be
-updated then.
+**Reading the numbers.** The *release model* was selected using the IN22 test sets (see "Selection" below), so its
+scores carry a small optimistic bias. It is a **single training run**. Two extra seeds of the human-only arm reproduce
+that arm's chrF++ curve (38.3, 38.3 and 38.5 en→xx on IN22-Gen at step 2,000). All scores on this page use the
+training-format source encoding described in section 2. Scores published before that fix are superseded.
 
 ## 1. Method
 
@@ -17,53 +17,93 @@ updated then.
 - **Test sets:** **IN22-Gen** (1,024 sentences per direction) and **IN22-Conv** (1,503), AI4Bharat's held-out
   benchmarks. Training never touches them.
 - **Directions:** all 44 per checkpoint (22 languages, to and from English), beam size 5.
-- **Pipeline:** `evaluation/build_eval_pairs.py` builds each direction's source file from the multi-parallel
-  per-language test files (target tag prepended, frozen 128k SentencePiece encoding). `evaluation/run_eval.py` decodes
-  with `onmt_translate` (beam 5, OpenNMT-py's default length penalty), detokenizes with the same SentencePiece model
-  and scores against the untokenized references. Scores are **corpus-level**: one score over the whole test set.
+- **Pipeline:** `evaluation/build_eval_pairs.py` builds each direction's source file from the untokenized
+  multi-parallel per-language test files: the target tag and the raw sentence, `<xx> sentence`, encoded in one call
+  with the frozen 128k SentencePiece model, exactly as the training sources were (`data/common/tokenization.py`).
+  `evaluation/run_eval.py` decodes with `onmt_translate` (beam 5, OpenNMT-py's default length penalty), detokenizes
+  with the same SentencePiece model and scores against the untokenized references. Scores are **corpus-level**: one
+  score over the whole test set.
 - **Macro average:** the unweighted mean of the 22 per-language scores in a direction bucket (en to xx, or xx to en).
   Small languages count as much as large ones.
 - **Raw weights:** every checkpoint holds raw training weights (no moving average), so a score at step N is the model
   at step N.
 - **Separate inference path:** the CTranslate2 evaluation used for deployment ([`deployment.md`](deployment.md)) is
-  never merged with these numbers.
+  reported separately and never merged with these numbers.
 - Outputs go to `evaluation/results/<run>/<checkpoint>/` and are not tracked by git.
 
-## 2. What was scored
+## 2. Source encoding
+
+Every training source is written as `<xx> sentence` and encoded by SentencePiece as one string. With SentencePiece's
+default dummy prefix and the 23 tags registered as user-defined pieces, that always gives
+`['▁', '<xx>', '▁word', ...]`: a lone `▁` piece first, then the tag. Our evaluation, the CTranslate2 path and our
+analyses had instead encoded the sentence and then put the tag in front (`['<xx>', '▁word', ...]`). That drops the
+leading `▁`, so the model was evaluated on a source format it never saw in training.
+
+**What changed.** One shared module, `data/common/tokenization.py`, now builds and encodes every source. The data
+pipeline (`tag_source`), `evaluation/build_eval_pairs.py`, `deployment/ct2_eval.py` and `deployment/ct2_infer.py` (and
+so the API) all use it. It reproduces 20,000 lines each of the encoded human training, mined training and dev files
+exactly, and it rejects any source that does not start with `['▁', '<xx>']`.
+
+**Effect on scores.** We re-scored 564 checkpoints. On average, English-to-Indic chrF++ rose by 1.96 on IN22-Gen and
+2.22 on IN22-Conv; Indic-to-English rose by 0.02 and 0.37. The effect grows with training length:
+
+| Checkpoint | IN22-Gen en→xx, old encoding | IN22-Gen en→xx, training encoding |
+|---|---|---|
+| combined pre-training (12+12), step 37,700 | 36.1 | 46.4 |
+| combined pre-training (12+18), step 49,000 | 34.8 | 46.6 |
+| human-only pre-training, step 20,800 | 42.9 | 45.3 |
+
+For the release model, the macro scores moved from 45.36 / 53.73 (IN22-Gen) and 41.06 / 50.04 (IN22-Conv) to the
+numbers in section 4. The earlier finding that English-to-Indic quality declines late in pre-training was an artifact
+of this mismatch. With the training encoding, English-to-Indic keeps rising to the end of training (see
+[`training.md`](training.md), section 6). The lesson we took: one function owns the input format, and every entry
+point checks it.
+
+## 3. What was scored
 
 Every pre-training arm on a dense grid (every 100 steps to about step 5,000, then every 25% of a human epoch or 10%
-of a mined epoch); every checkpoint of the four fine-tunes (every 200 steps); and every checkpoint still on disk of
-the two deeper architectures (every 1,000 steps).
+of a mined epoch); every checkpoint of the four fine-tunes and of the 12+18 fine-tune (every 200 steps); and every
+checkpoint still on disk of the two deeper architectures (every 1,000 steps).
 
 **Selection.** The checkpoint to carry forward is chosen by one rule: the highest mean chrF++ over IN22-Gen and
-IN22-Conv, in both directions. That is selection on the test sets, hence the optimistic bias.
+IN22-Conv, in both directions (the "mean of four" in section 8). That is selection on the test sets, hence the
+optimistic bias.
 
-## 3. Current best model
+## 4. Release model
 
-The current best model has the 12+12 architecture. It was pre-trained on the combined 8:2 (mined to human) data, best
-checkpoint at step 13,600, then fine-tuned on human data without replay, best checkpoint at step 1,800.
+The release model has the 12+12 architecture. It was pre-trained on the combined 8:2 (mined to human) data to step
+13,600, then fine-tuned on human data without replay. The release checkpoint is step 1,800.
 
-Macro over 22 languages:
+Macro over 22 languages, OpenNMT-py (`onmt_translate`, beam 5):
 
 | Test set | en→xx chrF++ | en→xx BLEU | xx→en chrF++ | xx→en BLEU |
 |---|---|---|---|---|
-| IN22-Gen | 45.36 | 16.39 | 53.73 | 28.71 |
-| IN22-Conv | 41.06 | 13.01 | 50.04 | 27.62 |
+| IN22-Gen | 46.95 | 19.11 | 53.69 | 29.00 |
+| IN22-Conv | 42.97 | 15.80 | 50.38 | 28.29 |
 
-## 4. Against published systems (IN22-Gen only)
+Through CTranslate2 on CPU (the served path, IN22-Gen), the same model scores 47.15 / 53.87 in float32 and
+47.16 / 53.85 in int8 ([`deployment.md`](deployment.md)).
 
-Baselines are the published chrF++ scores from the `bodhan-ai/indic-translate` model card (read on 2026-09-19). They
-are taken as published and not re-run. The card's scores are **sentence-level with greedy decoding**. Ours are
-**corpus-level with beam 5**. So the comparison is indicative, not exact. No IN22-Conv baseline exists. The table is
-sorted by the mean of the two directions. A star marks a system that covers only 16 of the 22 languages.
+**Model selection.** Under the corrected scores, several checkpoints are within 0.2 chrF++ of the release model on the
+mean of four (48.50): 18+18 combined pre-training at step 38,000 (48.70), mined → human at step 5,800 (48.70),
+12+18 → human at step 1,400 (48.59) and step 1,000 of the release run (48.58). These differences are small, come from a
+single seed and have not been significance-tested. The release model was kept.
+
+## 5. Against published systems (IN22-Gen only)
+
+Baselines are the published chrF++ scores from the `bodhan-ai/indic-translate` model card (read on 2026-09-19),
+except IndicTrans2, which we re-ran (section 6). The card's scores are **sentence-level with greedy decoding**. Ours
+and the re-run IndicTrans2 scores are **corpus-level with beam 5**. So the comparison is indicative, not exact. The
+card has no IN22-Conv baselines. The table is sorted by the mean of the two directions. A star marks a system that
+covers only 16 of the 22 languages.
 
 | Rank | Model | en→xx | xx→en | Mean | Parameters |
 |---|---|---|---|---|---|
-| 1 | IndicTrans2 | 48.60 | 62.80 | 55.70 | 1.1B |
+| 1 | IndicTrans2 † | 46.39 | 62.48 | 54.44 | 1.1B |
 | 2 | Indic Translate | 47.70 | 60.40 | 54.05 | 7.94B |
 | 3 | gemini-3.5-flash | 40.30 | 66.60 | 53.45 | undisclosed |
 | 4 | Sarvam Translate | 48.90 | 52.40 | 50.65 | 4B |
-| 5 | **IndicMT (current best model)** | 45.36 | 53.73 | 49.54 | 0.154B |
+| 5 | **IndicMT (release model)** | **46.95** | **53.69** | **50.32** | 0.154B |
 | 6 | gemma-4-31B-it | 39.20 | 59.60 | 49.40 | 30.7B |
 | 7 | translategemma-27b-it * | 39.60 | 58.50 | 49.05 | 27B |
 | 8 | gemma-4-26B-a4b-it | 36.20 | 56.60 | 46.40 | 25.2B |
@@ -73,11 +113,12 @@ sorted by the mean of the two directions. A star marks a system that covers only
 | 12 | translategemma-4b-it * | 31.20 | 49.20 | 40.20 | 4B |
 | 13 | gemma-3-4b-it | 22.90 | 47.10 | 35.00 | 4.3B |
 
-IndicMT ranks 5th of 13 on the mean, 0.14 above gemma-4-31B-it and 1.11 below Sarvam Translate. It is **4th on
-en→xx**, behind Sarvam Translate (48.9, +3.5 higher), IndicTrans2 (48.6) and Indic Translate (47.7). It is 9th on
-xx→en, ahead of Sarvam Translate (52.4). It has 7 times fewer parameters than the 1.1B IndicTrans2 variant and 26 times
-fewer than Sarvam Translate. The human-only pre-training checkpoint at step 11,400 (44.05 / 44.08) ranked 9th on the
-mean.
+† Re-run by us with our protocol (beam 5, corpus-level chrF++). The model card lists 48.60 / 62.80.
+
+IndicMT ranks 5th of 13 on the mean, 0.92 above gemma-4-31B-it and 0.33 below Sarvam Translate. It is **3rd on
+en→xx**, behind Sarvam Translate (48.9, 1.95 higher) and Indic Translate (47.7, 0.75 higher), and 0.56 above the
+re-run IndicTrans2. It is 9th on xx→en, ahead of Sarvam Translate (52.4). It has 7.2 times fewer parameters than the
+1.1B IndicTrans2 and 26 times fewer than Sarvam Translate.
 
 ### Model sizes
 
@@ -88,7 +129,7 @@ measured: 153,807,872 (encoder 103,310,336 and decoder 50,497,536). "nominal" me
 | Model | Parameters | Basis | Note |
 |---|---|---|---|
 | Sarvam Translate | 4.0B | rounded | Hugging Face model page shows '4B params'; fine-tuned from Gemma 3 4B |
-| IndicTrans2 | 1.1B | variant | The 1.1B variant; the model card does not say which variant was ranked (a distilled variant is about 0.3B) |
+| IndicTrans2 | 1.1B | variant | The 1.1B `indictrans2-{en-indic,indic-en}-1B` models, which we re-ran (section 6); the model card does not say which variant it ranked (a distilled variant is about 0.3B) |
 | Indic Translate | 7.94B | card | Total parameters as stated on its own model card; built on Gemma 4 E4B |
 | gemini-3.5-flash | not disclosed | undisclosed | Google does not publish a parameter count |
 | translategemma-27b-it | 27.0B | nominal | Size from the model name; built on Gemma 3 27B |
@@ -100,165 +141,132 @@ measured: 153,807,872 (encoder 103,310,336 and decoder 50,497,536). "nominal" me
 | gemma-3-12b-it | 12.19B | primary | Gemma 3 technical report parameter table, including the vision encoder |
 | gemma-3-4b-it | 4.3B | primary | Gemma 3 technical report parameter table, including the vision encoder |
 
-## 5. Results by language
+## 6. IndicTrans2 under the same protocol
 
-chrF++ of the current best model on both test sets, with the best published IN22-Gen score among the three systems
-whose card lists per-language numbers (Indic Translate, Sarvam Translate, IndicTrans2):
+The model-card scores above are sentence-level with greedy decoding. To remove that difference for the strongest open
+baseline, we ran `ai4bharat/indictrans2-en-indic-1B` (en→xx) and `ai4bharat/indictrans2-indic-en-1B` (xx→en) on the raw
+IN22 text of both test sets. We used IndicTransToolkit pre- and post-processing as on the model cards and beam 5, and
+scored the outputs exactly like IndicMT (corpus-level sacreBLEU chrF++, same references, macro over 22 languages).
+
+| Test set | Direction | IndicTrans2 1B | IndicMT |
+|---|---|---|---|
+| IN22-Gen | en→xx | 46.39 | 46.95 |
+| IN22-Gen | xx→en | 62.48 | 53.69 |
+| IN22-Conv | en→xx | 42.61 | 42.97 |
+| IN22-Conv | xx→en | 55.63 | 50.38 |
+
+Under one protocol, IndicTrans2's en→xx IN22-Gen score is 46.39, against 48.6 on its model card. Its xx→en score
+hardly moves (62.48 against 62.8).
+
+**Significance (IN22-Gen).** We used `evaluation/paired_significance.py`: sacreBLEU paired bootstrap, 1,000 resamples,
+chrF++, IndicTrans2 as the baseline, with the 22 directions of each bucket pooled.
+
+- **en→xx:** IndicMT is slightly but significantly ahead when the directions are pooled (47.11 against 46.53,
+  p = 0.001). Per direction it is split: 11 directions significantly better and 10 significantly worse (p < 0.05).
+- **xx→en:** IndicTrans2 is ahead in all 22 directions (pooled p = 0.001).
+
+IndicTrans2 1B has 1.1B parameters, 7.2 times more than IndicMT. The IN22-Conv comparison was not significance-tested.
+
+## 7. Results by language
+
+chrF++ of the release model on both test sets, with the best published IN22-Gen score among the three systems whose
+card lists per-language numbers (Indic Translate, Sarvam Translate, IndicTrans2; model-card values):
 
 | Language | en→xx Gen | en→xx Conv | xx→en Gen | xx→en Conv | en→xx best published (Gen) | xx→en best published (Gen) |
 |---|---|---|---|---|---|---|
-| Assamese | 42.98 | 42.45 | 56.14 | 54.91 | 47.1 | 65.8 |
-| Bengali | 46.31 | 43.64 | 54.30 | 53.35 | 51.8 | 63.2 |
-| Bodo | 46.92 | 43.67 | 52.23 | 48.39 | 48.9 | 62.1 |
-| Dogri | 52.93 | 46.57 | 60.39 | 57.62 | 58.2 | 72.6 |
-| Gujarati | 49.52 | 48.60 | 57.70 | 56.28 | 53.5 | 66.5 |
-| Hindi | 51.56 | 45.48 | 56.76 | 54.42 | 56.7 | 65.4 |
-| Kannada | 47.96 | 31.08 | 55.09 | 42.93 | 52.2 | 64.2 |
-| Kashmiri | 31.31 | 24.21 | 50.30 | 46.42 | 40.2 | 60.4 |
-| Konkani | 42.01 | 38.66 | 49.55 | 44.61 | 45.2 | 59.2 |
-| Maithili | 48.40 | 41.78 | 56.33 | 51.29 | 50.5 | 64.8 |
-| Malayalam | 43.37 | 36.91 | 53.37 | 48.11 | 50.9 | 64.5 |
-| Manipuri | 40.64 | 37.49 | 50.44 | 46.01 | 45.5 | 57.9 |
-| Marathi | 47.40 | 44.56 | 54.88 | 52.57 | 51.3 | 63.7 |
-| Nepali | 48.28 | 47.15 | 58.59 | 56.78 | 49.9 | 67.7 |
-| Odia | 44.95 | 40.17 | 56.87 | 53.93 | 48.2 | 66.2 |
-| Punjabi | 45.99 | 50.98 | 53.76 | 55.71 | 50.6 | 63.4 |
-| Sanskrit | 35.02 | 32.37 | 46.03 | 41.33 | 38.8 | 54.8 |
-| Santali | 38.68 | 40.63 | 43.47 | 44.15 | 40.9 | 47.3 |
-| Sindhi | 37.93 | 33.81 | 50.15 | 45.16 | 39.1 | 57.3 |
-| Tamil | 46.63 | 37.01 | 50.33 | 41.41 | 50.9 | 59.8 |
-| Telugu | 48.35 | 41.93 | 54.12 | 47.39 | 52.4 | 64.8 |
-| Urdu | 60.75 | 54.23 | 61.26 | 58.09 | 68.2 | 73.0 |
+| Assamese | 44.53 | 44.20 | 55.78 | 55.41 | 47.1 | 65.8 |
+| Bengali | 47.18 | 44.68 | 54.23 | 53.41 | 51.8 | 63.2 |
+| Bodo | 49.15 | 46.17 | 52.29 | 49.08 | 48.9 | 62.1 |
+| Dogri | 55.55 | 50.46 | 60.83 | 57.88 | 58.2 | 72.6 |
+| Gujarati | 50.77 | 50.09 | 57.84 | 56.40 | 53.5 | 66.5 |
+| Hindi | 53.12 | 47.18 | 56.77 | 55.13 | 56.7 | 65.4 |
+| Kannada | 48.96 | 31.70 | 55.17 | 43.00 | 52.2 | 64.2 |
+| Kashmiri | 32.89 | 27.30 | 50.20 | 46.91 | 40.2 | 60.4 |
+| Konkani | 43.40 | 41.24 | 49.60 | 45.23 | 45.2 | 59.2 |
+| Maithili | 49.57 | 43.85 | 56.51 | 51.88 | 50.5 | 64.8 |
+| Malayalam | 44.65 | 37.80 | 53.28 | 48.08 | 50.9 | 64.5 |
+| Manipuri | 45.60 | 41.48 | 50.13 | 46.29 | 45.5 | 57.9 |
+| Marathi | 48.47 | 45.74 | 54.77 | 52.68 | 51.3 | 63.7 |
+| Nepali | 49.53 | 49.54 | 58.69 | 57.01 | 49.9 | 67.7 |
+| Odia | 46.05 | 40.73 | 56.99 | 54.33 | 48.2 | 66.2 |
+| Punjabi | 47.11 | 52.44 | 53.66 | 56.02 | 50.6 | 63.4 |
+| Sanskrit | 36.82 | 34.23 | 45.59 | 41.76 | 38.8 | 54.8 |
+| Santali | 40.65 | 42.67 | 43.43 | 44.90 | 40.9 | 47.3 |
+| Sindhi | 39.47 | 37.03 | 50.26 | 45.81 | 39.1 | 57.3 |
+| Tamil | 47.43 | 37.91 | 50.23 | 41.65 | 50.9 | 59.8 |
+| Telugu | 49.42 | 42.64 | 53.87 | 47.24 | 52.4 | 64.8 |
+| Urdu | 62.61 | 56.33 | 60.99 | 58.29 | 68.2 | 73.0 |
 
-- **en→xx is close to the specialists in several low-resource languages.** The model trails the best published system
-  by a median of 4.1 chrF++ on IN22-Gen en→xx, but by only 1.2 to 2.2 for Sindhi, Nepali, Bodo, Maithili and Santali.
-  The largest gaps are Kashmiri (8.9), Malayalam (7.5) and Urdu (7.5). It does not beat the best published system in
-  any language.
-- **xx→en trails further,** by a median of 9.2 (Santali 3.8 is the smallest; Dogri 12.2 the largest). Every model of ours
-  that saw mined data reaches 53 to 54 here, whatever the fine-tuning, so the gap is not specific to this checkpoint.
-- **Weakest directions:** English to Kashmiri (31.31 Gen, 24.21 Conv), English to Sanskrit (35.02) and Santali to
-  English (43.47). Sanskrit is the second-weakest en→xx direction, but its gap to the best published system (3.8) is
-  close to the median, so the evidence does not single out the 128k vocabulary.
-- **Conversational en→xx is uneven.** IN22-Conv is lower than IN22-Gen for most languages, by 16.9 for Kannada and
-  9.6 for Tamil, but higher for Punjabi (+5.0) and Santali (+2.0). The causes have not been examined.
+- **en→xx is at or near the best published system in several low-resource languages.** On IN22-Gen en→xx the model
+  trails the best published card score by a median of 2.69 chrF++. It is above it for Sindhi (+0.37), Bodo (+0.25)
+  and Manipuri (+0.10), and within 1 for Santali (0.25), Nepali (0.37) and Maithili (0.93). The card scores are
+  sentence-level and greedy, so differences this small are not meaningful. The largest gaps are Kashmiri (7.31),
+  Malayalam (6.25) and Urdu (5.59).
+- **xx→en trails further,** by a median of 9.21 (Santali 3.87 is the smallest; Urdu 12.01 the largest). Every model of
+  ours trained on both mined and human data reaches 53.69 to 55.07 here (section 8), whatever the fine-tuning, so the
+  gap is not specific to this checkpoint.
+- **Weakest directions:** English to Kashmiri (32.89 Gen, 27.30 Conv), English to Sanskrit (36.82) and Santali to
+  English (43.43). Sanskrit is the second-weakest en→xx direction, but its gap to the best published system (1.98) is
+  below the median, so the evidence does not single out the 128k vocabulary.
+- **Conversational en→xx is uneven.** IN22-Conv is lower than IN22-Gen for most languages, by 17.26 for Kannada and
+  9.52 for Tamil, but higher for Punjabi (+5.33) and Santali (+2.02). The causes have not been examined.
 
-## 6. Fine-tuning results
+## 8. Pre-training, fine-tuning and architecture runs
 
-Four fine-tuning runs, 30 checkpoints each (every 200 steps), scored on both test sets, all 44 directions, beam 5. The
-best checkpoint of each run is chosen by the rule in section 2. "Replay" means 20% mined data was mixed back in. See
-[`training.md`](training.md) for the setup and the findings.
+The table gives the best checkpoint of each run by the selection rule (section 3), plus the release checkpoint.
+"Replay" means 20% mined data was mixed back in. The fine-tunes start from combined step 13,600 and mined step 24,600,
+and the 12+18 fine-tune starts from step 13,000. These starting points were chosen with the old encoding (section 2).
+See [`training.md`](training.md) for the setup.
 
-| Run | Best step | IN22-Gen en→xx | IN22-Gen xx→en | IN22-Conv en→xx | IN22-Conv xx→en | IN22-Gen 44-direction mean |
+| Run | Step | IN22-Gen en→xx | IN22-Gen xx→en | IN22-Conv en→xx | IN22-Conv xx→en | Mean of four |
 |---|---|---|---|---|---|---|
-| combined, start (pre-training step 13,600) | – | 43.84 | 53.80 | 39.56 | 49.10 | 48.82 |
-| **combined → human, no replay (current best)** | **1,800** | **45.36** | 53.73 | **41.06** | **50.04** | **49.54** |
-| combined → human + 20% replay | 2,000 | 44.89 | **53.89** | 40.46 | 49.66 | 49.39 |
-| mined, start (pre-training step 24,600) | – | 30.45 | 44.24 | 26.89 | 38.79 | 37.35 |
-| mined → human, no replay | 4,400 | 39.73 | 53.16 | 36.29 | 49.24 | 46.45 |
-| mined → human + 20% replay | 5,800 | 39.53 | 53.84 | 36.20 | 49.45 | 46.69 |
-| human-only pre-training, step 11,400 (reference) | – | 44.05 | 44.08 | | | 44.06 |
+| human-only pre-training | 13,900 | 45.21 | 43.80 | 41.67 | 41.31 | 43.00 |
+| mined-only pre-training | 35,000 | 32.68 | 44.20 | 28.13 | 38.85 | 35.96 |
+| combined pre-training, 12+12 | 37,700 | 46.36 | 55.05 | 41.81 | 50.55 | 48.44 |
+| combined pre-training, 12+18 | 38,000 | 46.65 | 54.51 | 42.23 | 50.13 | 48.38 |
+| combined pre-training, 18+18 | 38,000 | 46.79 | 55.07 | 42.32 | 50.62 | 48.70 |
+| combined → human, no replay | 1,000 | 46.80 | 54.04 | 42.80 | 50.66 | 48.58 |
+| **combined → human, no replay (release model)** | **1,800** | **46.95** | **53.69** | **42.97** | **50.38** | **48.50** |
+| combined → human + 20% replay | 2,800 | 46.64 | 53.85 | 42.32 | 50.09 | 48.22 |
+| mined → human, no replay | 5,800 | 47.04 | 54.13 | 43.00 | 50.61 | 48.70 |
+| mined → human + 20% replay | 5,400 | 46.65 | 54.47 | 42.03 | 50.28 | 48.36 |
+| 12+18 combined → human, no replay | 1,400 | 47.08 | 53.73 | 43.15 | 50.39 | 48.59 |
 
-IN22-Gen en→xx / xx→en chrF++ along each run (selected steps):
-
-| Step | combined, no replay | combined + replay | mined, no replay | mined + replay |
-|---|---|---|---|---|
-| 200 | not reported here | 44.31 / 53.86 | 33.31 / 45.99 | 33.22 / 45.96 |
-| 1,000 | not reported here | 44.37 / 54.04 | 35.26 / 51.12 | 34.69 / 51.10 |
-| 1,800 | **45.36 / 53.73** | 44.59 / 53.80 | 38.93 / 52.37 | 37.10 / 52.58 |
-| 2,000 | 44.97 / 53.61 | 44.89 / 53.89 | 38.67 / 52.47 | 37.59 / 52.87 |
-| 3,000 | 44.80 / 53.35 | 44.48 / 53.80 | 38.97 / 53.01 | 37.86 / 53.46 |
-| 4,000 | 44.45 / 53.25 | 44.68 / 53.54 | 37.96 / 53.15 | 38.72 / 53.53 |
-| 5,000 | 44.58 / 53.02 | 44.39 / 53.52 | 38.58 / 53.40 | 38.65 / 53.64 |
-| 6,000 | 44.75 / 52.67 | 44.06 / 53.54 | 38.69 / 53.11 | 38.65 / 53.86 |
+- **Long combined pre-training is as good as fine-tuning.** The last combined pre-training checkpoints (48.44 for
+  12+12, 48.70 for 18+18) are level with the best fine-tuned models (48.58 to 48.70). The fine-tunes started from step
+  13,600 because the old encoding made later checkpoints look worse.
+- **Replay does not help** either start on the mean of four (combined 48.58 without against 48.22 with; mined 48.70
+  against 48.36).
+- **The mined route is level with the combined route** after human fine-tuning (IN22-Gen en→xx 47.04 against 46.80).
+  An earlier version of this page reported a large English-to-Indic gap between the two routes, with a per-language
+  analysis. That gap came from the old encoding, and the analysis has been withdrawn.
+- **Indic-to-English needs both data sources.** Every model trained on mined and human data scores 53.69 to 55.07 on
+  IN22-Gen xx→en, against 43.80 for human-only and 44.20 for mined-only pre-training.
+- **Depth** is discussed in [`training.md`](training.md), section 8.
 
 Per-checkpoint scores (chrF++ and BLEU for every step) are written to `evaluation/results/` by the evaluation scripts
 and are not tracked in git.
 
-### Per-language gap: mined → human against combined → human
+## 9. LLM-as-judge (Gemma 4 31B-it, en→xx)
 
-IN22-Gen chrF++, sorted by post-mixing mined-to-human token ratio. The gap is largest where the mined model had little
-or no data. See [`training.md`](training.md), section 7.
-
-| Language | Mined : human tokens | en→xx: mined start | en→xx: mined → human | en→xx: combined → human | en→xx gap | xx→en: mined → human | xx→en: combined → human | xx→en gap |
-|---|---|---|---|---|---|---|---|---|
-| Dogri | none | 11.2 | 43.9 | 52.9 | **+9.0** | 59.7 | 60.4 | +0.7 |
-| Konkani | none | 8.2 | 37.3 | 42.0 | **+4.7** | 49.3 | 49.5 | +0.3 |
-| Manipuri | none | 0.9 | 24.7 | 40.6 | **+16.0** | 49.1 | 50.4 | +1.3 |
-| Santali | none | 0.8 | 26.4 | 38.7 | **+12.3** | 41.1 | 43.5 | +2.4 |
-| Sindhi | none | 8.5 | 32.0 | 37.9 | **+5.9** | 48.4 | 50.1 | +1.8 |
-| Bodo | <0.01× | 7.7 | 38.7 | 46.9 | **+8.2** | 50.9 | 52.2 | +1.3 |
-| Maithili | 0.9× | 27.4 | 42.3 | 48.4 | **+6.0** | 56.3 | 56.3 | +0.0 |
-| Kashmiri | 2.2× | 21.7 | 26.0 | 31.3 | **+5.3** | 48.7 | 50.3 | +1.6 |
-| Sanskrit | 2.4× | 18.2 | 26.6 | 35.0 | **+8.4** | 45.1 | 46.0 | +0.9 |
-| Assamese | 5.7× | 34.4 | 37.6 | 43.0 | **+5.4** | 56.5 | 56.1 | -0.3 |
-| Nepali | 26.6× | 40.1 | 43.5 | 48.3 | **+4.7** | 58.4 | 58.6 | +0.1 |
-| Punjabi | 44.4× | 44.2 | 43.6 | 46.0 | **+2.4** | 53.1 | 53.8 | +0.6 |
-| Odia | 44.9× | 39.3 | 41.7 | 44.9 | **+3.2** | 56.3 | 56.9 | +0.6 |
-| Marathi | 46.5× | 41.4 | 43.5 | 47.4 | **+3.9** | 54.8 | 54.9 | +0.1 |
-| Urdu | 50.1× | 53.8 | 54.9 | 60.7 | **+5.8** | 60.6 | 61.3 | +0.7 |
-| Tamil | 56.0× | 44.8 | 43.9 | 46.6 | **+2.8** | 49.8 | 50.3 | +0.5 |
-| Hindi | 61.5× | 49.9 | 47.5 | 51.6 | **+4.1** | 56.6 | 56.8 | +0.2 |
-| Gujarati | 62.1× | 46.1 | 45.8 | 49.5 | **+3.7** | 57.6 | 57.7 | +0.1 |
-| Malayalam | 63.8× | 40.1 | 40.4 | 43.4 | **+3.0** | 53.6 | 53.4 | -0.2 |
-| Bengali | 66.7× | 42.0 | 43.7 | 46.3 | **+2.6** | 54.2 | 54.3 | +0.1 |
-| Kannada | 71.7× | 43.3 | 45.3 | 48.0 | **+2.7** | 55.3 | 55.1 | -0.2 |
-| Telugu | 75.3× | 45.8 | 44.8 | 48.4 | **+3.6** | 54.1 | 54.1 | -0.0 |
-
-## 7. LLM-as-judge (Gemma 4 31B-it, en→xx)
-
-chrF++ and BLEU compare surface text. We also used a language model as a judge, on all **55,594** English-to-Indic
+chrF++ and BLEU compare surface text. We also use a language model as a judge, on all **55,594** English-to-Indic
 sentences of IN22-Gen and IN22-Conv. The judge, Gemma 4 31B-it, scores **fluency**, **adequacy** (is the meaning
 there?) and **overall** from 1 to 5, at temperature 0 with seed 42. It runs in two variants:
 
 - **V2** (the headline) sees the human reference.
 - **V1** is reference-free. It is a control against rewarding mere overlap with the reference.
 
-"Perfect" means fluency = adequacy = overall = 5. Means are over every scored item. Failed items are excluded, and the
-one empty output was auto-scored. Protocol details: [`../evaluation/llm_judge/README.md`](../evaluation/llm_judge/README.md).
+"Perfect" means fluency = adequacy = overall = 5. Protocol details:
+[`../evaluation/llm_judge/README.md`](../evaluation/llm_judge/README.md).
 
-**Sanity checks.** A deliberately mismatched translation gets adequacy 1.00 (pass). The human reference itself, judged
-reference-free, gets overall 4.62 and a perfect 5/5/5 on about 79% of items. That is below the expected 4.7, because
-the judge flags real errors in the IN22 references (for example a tense error in an Assamese reference, and a Hindi
-reference that renders "dharmic action" as religious struggles). Santali (identity overall 3.88) and Manipuri (4.02)
-are unreliable for this judge.
+**Results: being re-run.** The judge results published earlier were computed on translations produced with the old
+source encoding (section 2). They are withdrawn, and the judge is being re-run on the release model's corrected
+translations. This section will report the new numbers when that run finishes.
 
-| Model | Variant | Perfect 5/5/5 | Mean of the three ≥ 4 | Fluency | Adequacy | Overall | Failed items |
-|---|---|---|---|---|---|---|---|
-| **Current best (step 1,800)** | V2, with reference | **46.7%** | **57.5%** | 4.04 | 4.16 | 3.80 | 5 |
-| **Current best (step 1,800)** | V1, reference-free | **50.1%** | **59.8%** | 4.10 | 4.22 | 3.87 | 20 |
-| Replay (step 2,000) | V2, with reference | 44.9% | 56.1% | 4.02 | 4.13 | 3.77 | 13 |
-| Replay (step 2,000) | V1, reference-free | 48.5% | 58.7% | 4.07 | 4.19 | 3.84 | 20 |
-
-By test set (current best, V2): IN22-Conv 54.7% perfect (overall 4.01) and IN22-Gen 34.8% (overall 3.51). Under V1:
-58.5% and 37.8%. Both models and both variants score clearly higher on the conversational set.
-
-**Against the replay checkpoint.** Paired over the same items, the current best is ahead under both variants: +1.76
-points perfect under V2 (95% bootstrap interval 1.43 to 2.09, 1,000 resamples of items) and +1.61 under V1 (1.30 to
-1.91). Mean overall is +0.04 and +0.03. Per item, 8,597 improve and 7,364 get worse under V2 (39,617 unchanged). The
-judge agrees with the chrF++-based choice, though the margin is small, as the chrF++ difference was.
-
-V1 and V2 agree within about 3.5 points for both models, so the reference-aided scores are not driven by overlap with
-the reference.
-
-**Per language (current best, V2; overall / perfect):**
-
-| Language | Overall | Perfect | Language | Overall | Perfect |
-|---|---|---|---|---|---|
-| Punjabi | 4.19 | 60.3% | Urdu | 3.91 | 49.3% |
-| Bengali | 4.16 | 59.4% | Maithili | 3.90 | 48.8% |
-| Gujarati | 4.14 | 58.2% | Marathi | 3.88 | 48.8% |
-| Telugu | 4.06 | 55.4% | Assamese | 3.83 | 47.7% |
-| Hindi | 4.06 | 56.1% | Konkani | 3.73 | 41.9% |
-| Kannada | 4.03 | 54.1% | Bodo | 3.59 | 38.0% |
-| Odia | 4.02 | 55.4% | Dogri | 3.58 | 37.1% |
-| Malayalam | 3.99 | 53.6% | Santali | 3.47 | 33.7% |
-| Tamil | 3.93 | 51.5% | Sindhi | 3.39 | 33.6% |
-| Nepali | 3.93 | 49.7% | Sanskrit | 3.36 | 31.0% |
-| | | | Kashmiri | 3.28 | 31.7% |
-| | | | Manipuri | 3.25 | 31.1% |
-
-The ordering matches the replay checkpoint's closely (same top four and bottom six). Hindi is the one language that
-drops (4.15 to 4.06), while Telugu, Nepali and Urdu gain the most. Excluding Santali and Manipuri, 48.1% are perfect.
-Compared with the 79% the references themselves reach, 46.7% is about 59% of the human ceiling.
+**Sanity checks of the judge itself.** A deliberately mismatched translation gets adequacy 1.00 (pass). The human
+reference itself, judged reference-free, gets overall 4.62 and a perfect 5/5/5 on about 79% of items. That is below
+the expected 4.7, because the judge flags real errors in the IN22 references (for example a tense error in an
+Assamese reference, and a Hindi reference that renders "dharmic action" as religious struggles). Santali (identity
+overall 3.88) and Manipuri (4.02) are unreliable for this judge.
 
 The judge's per-item outputs and summaries are written to `evaluation/llm_judge/results/` and are not tracked in git.

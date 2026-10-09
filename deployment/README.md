@@ -2,9 +2,8 @@
 
 This directory turns a trained checkpoint into a small CPU-served model with a FastAPI backend and a plain HTML/JS
 frontend. The explanation and all numbers are in [`../docs/deployment.md`](../docs/deployment.md). The model served is the
-**current best model** (12+12, combined pre-training then human fine-tuning without replay, step 1,800), converted to
-**int8** (170.6 MB, runs on CPU). The release model will be chosen after the deeper architectures finish fine-tuning.
-Weights will be linked from `<WEIGHTS_URL>`.
+**release model** (12+12, combined pre-training then human fine-tuning without replay, step 1,800), converted to
+**int8** (170.6 MB, runs on CPU). Weights will be linked from `<WEIGHTS_URL>`.
 
 ## Files
 
@@ -23,7 +22,7 @@ Weights will be linked from `<WEIGHTS_URL>`.
 
 ```bash
 sbatch -p <partition> scripts/slurm/deployment_convert_ct2.sh                 # Job20, CPU only
-# defaults to the current best model; override with CHECKPOINT=... CT2_ROOT=...
+# defaults to the release model; override with CHECKPOINT=... CT2_ROOT=...
 ```
 
 This converts the checkpoint, evaluates float32, int16 and int8 on IN22-Gen through CTranslate2, and writes
@@ -38,17 +37,17 @@ Two compatibility problems were found and fixed in the converter:
    relabels it `"scaled-dot"` in a patched temporary copy. This only names the attention kernel; the learned weights are the
    same. The original checkpoint is not modified.
 
-Quantization on the current best model (CPU, 8 threads, beam 5, IN22-Gen):
+Quantization on the release model (CPU, 8 threads, beam 5, IN22-Gen):
 
 | Variant | en→xx chrF++ | xx→en chrF++ | p50 latency | Size |
 |---|---|---|---|---|
-| float32 | 46.04 | 53.87 | 399.2 ms | 630.4 MB |
-| int16 | 45.91 | 53.79 | 367.1 ms | 323.2 MB |
-| int8 | 45.90 | 53.77 | 374.2 ms | 170.6 MB |
+| float32 | 47.15 | 53.87 | 399.2 ms | 630.4 MB |
+| int16 | 47.15 | 53.86 | 367.1 ms | 323.2 MB |
+| int8 | 47.16 | 53.85 | 374.2 ms | 170.6 MB |
 
-int8 costs about 0.13 chrF++ (en→xx) and 0.06 (xx→en) against float32. That is statistically significant but far below the
-gap to neighbouring systems, so int8 is the serving choice. int16 is the lossless option at half the size. Job21
-(`scripts/slurm/deployment_quant_significance.sh`) runs the significance test.
+With training-format inputs, neither int16 nor int8 is significantly different from float32 (paired bootstrap, pooled
+p = 0.18 for int8 en→xx and 0.15 for xx→en, no direction significant after Bonferroni correction), so int8 is the
+serving choice. Job21 (`scripts/slurm/deployment_quant_significance.sh`) runs the significance test.
 
 ## 2. Run the API (no container needed)
 

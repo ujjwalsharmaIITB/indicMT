@@ -40,66 +40,80 @@ scripts and are not stored here.
 
 ## Results
 
-Current best model: 12+12 layers, pre-trained on the combined 8:2 (mined to human) data (best checkpoint, step 13,600), then
-fine-tuned on human data without replay (best checkpoint, step 1,800). Macro average over the 22 languages, chrF++, with
-**CPU inference** (CTranslate2 float32, beam 5):
+Release model: 12+12 layers, pre-trained on the combined 8:2 (mined to human) data (step 13,600), then fine-tuned on
+human data without replay (step 1,800). Macro average over the 22 languages, chrF++, OpenNMT-py (`onmt_translate`,
+beam 5):
 
 | Test set | en→xx | xx→en |
 |---|---:|---:|
-| IN22-Gen | **46.04** | **53.87** |
-| IN22-Conv | 41.06* | 50.04* |
+| IN22-Gen | **46.95** | **53.69** |
+| IN22-Conv | **42.97** | **50.38** |
 
-\* IN22-Conv was scored only through OpenNMT-py (`onmt_translate`, beam 5). Through OpenNMT-py the same checkpoint scores
-45.36 / 53.73 on IN22-Gen; every checkpoint comparison during training used that path.
+- **chrF++** is a character n-gram F-score. Higher is better. BLEU for the same model: IN22-Gen 19.11 (en→xx) and
+  29.00 (xx→en); IN22-Conv 15.80 and 28.29.
+- **CPU inference** (CTranslate2, beam 5, IN22-Gen): float32 47.15 / 53.87 and int8 47.16 / 53.85. **int8 is not
+  significantly different from float32** (paired bootstrap, pooled p = 0.18 en→xx and 0.15 xx→en; 0 of 22 directions
+  after Bonferroni correction), and it is 3.7 times smaller.
+- Against 12 published systems on IN22-Gen, IndicMT ranks **3rd of 13 on en→xx**, 9th on xx→en and 5th of 13 on the
+  two-direction mean, with far fewer parameters (0.154B, against 1.1B to 30.7B). The comparison is indicative: the
+  baselines are model-card scores (sentence-level, greedy decoding), except IndicTrans2, which we re-ran with our
+  protocol; ours and IndicTrans2's are corpus-level with beam 5.
+- **Against IndicTrans2 1B under the same protocol** (IN22-Gen, paired bootstrap): IndicMT is slightly but
+  significantly ahead on en→xx when the 22 directions are pooled (47.11 against 46.53, p = 0.001), though per
+  direction it is split (11 directions better, 10 worse at p < 0.05). IndicTrans2 is clearly ahead on xx→en (62.48
+  against 53.69) and has 1.1B parameters, 7.2 times more than IndicMT.
+- **LLM judge** (Gemma 4 31B-it, English to Indic): being re-run on the corrected translations. The earlier judge
+  results used translations from the old source encoding and are withdrawn.
 
-- **chrF++** is a character n-gram F-score. Higher is better. BLEU for the same model with CPU inference: IN22-Gen 16.11
-  (en→xx) and 28.82 (xx→en); IN22-Conv 13.01 and 27.62 (OpenNMT-py).
-- Against 12 published systems on IN22-Gen, IndicMT ranks **5th of 13** on the two-direction mean and **4th on en→xx**, with
-  far fewer parameters (0.154B, against 1.1B to 30.7B). The comparison is indicative: the baselines are published
-  sentence-level, greedy-decoding scores, and ours are corpus-level with beam 5.
-- **LLM judge** (Gemma 4 31B-it, English to Indic, 55,594 sentences): **46.7%** of translations are rated perfect (5/5/5) on
-  fluency, adequacy and overall, against about 79% for the human references.
-- **int8 quantization** costs 0.13 chrF++ (en→xx) and 0.06 (xx→en) against float32, and makes the model 3.7 times smaller.
+> [!NOTE]
+> **Corrected scores (October 2026).** Earlier versions of this page reported scores computed with a source encoding
+> that differed from training by one SentencePiece piece (a lone `▁` before the language tag). Training, evaluation
+> and serving now share one encoding function ([`data/common/tokenization.py`](data/common/tokenization.py)). The fix
+> raised en→xx by about 2 chrF++ on average and left xx→en nearly unchanged. Details:
+> [`docs/evaluation.md`](docs/evaluation.md#2-source-encoding).
 
 > [!WARNING]
-> **Caveats.** All results are from a **single seed**. The checkpoint was **selected using the IN22 test sets**, so the IN22
-> scores carry a small optimistic bias. The release model will be chosen after the deeper architectures (12+18, 18+18) finish
-> fine-tuning; numbers here will be updated then.
+> **Caveats.** The release model is a **single training run**. Two extra seeds of the human-only arm reproduce that
+> arm's chrF++ curve (38.3, 38.3 and 38.5 en→xx on IN22-Gen at step 2,000), but the seed variance of the release model
+> itself is not measured. Checkpoints were **selected using the IN22 test sets**, so the IN22 scores carry a small
+> optimistic bias. Under the corrected scores, a few other checkpoints are up to 0.2 chrF++ higher on the mean of the
+> four IN22 buckets (48.70 against 48.50; single seed, not significance-tested). The release model was kept. See
+> [`docs/training.md`](docs/training.md).
 
-### Results by language (current best model)
+### Results by language (release model)
 
-chrF++ on IN22-Gen with CPU inference (CTranslate2 float32) and on IN22-Conv through OpenNMT-py. This table will be updated when the release model is chosen. The fuller version, with the
-best published score per language, is in [`docs/evaluation.md`](docs/evaluation.md).
+chrF++ through OpenNMT-py (beam 5) on IN22-Gen and IN22-Conv. The fuller version, with the best published score per
+language, is in [`docs/evaluation.md`](docs/evaluation.md).
 
 <details>
 <summary><b>Show the per-language table (22 languages)</b></summary>
 <br/>
 
-| Language | IN22-Gen en→xx (CPU) | IN22-Gen xx→en (CPU) | IN22-Conv en→xx | IN22-Conv xx→en |
+| Language | IN22-Gen en→xx | IN22-Gen xx→en | IN22-Conv en→xx | IN22-Conv xx→en |
 |---|---:|---:|---:|---:|
-| Assamese | 43.60 | 56.21 | 42.45 | 54.91 |
-| Bengali | 46.34 | 54.40 | 43.64 | 53.35 |
-| Bodo | 47.80 | 52.39 | 43.67 | 48.39 |
-| Dogri | 54.00 | 60.54 | 46.57 | 57.62 |
-| Gujarati | 49.65 | 57.86 | 48.60 | 56.28 |
-| Hindi | 51.72 | 56.92 | 45.48 | 54.42 |
-| Kannada | 48.31 | 55.24 | 31.08 | 42.93 |
-| Kashmiri | 31.78 | 50.36 | 24.21 | 46.42 |
-| Konkani | 42.53 | 49.84 | 38.66 | 44.61 |
-| Maithili | 48.47 | 56.33 | 41.78 | 51.29 |
-| Malayalam | 43.87 | 53.63 | 36.91 | 48.11 |
-| Manipuri | 44.23 | 50.54 | 37.49 | 46.01 |
-| Marathi | 47.65 | 55.05 | 44.56 | 52.57 |
-| Nepali | 48.41 | 58.75 | 47.15 | 56.78 |
-| Odia | 45.45 | 56.95 | 40.17 | 53.93 |
-| Punjabi | 46.21 | 53.87 | 50.98 | 55.71 |
-| Sanskrit | 37.03 | 46.24 | 32.37 | 41.33 |
-| Santali | 40.65 | 43.50 | 40.63 | 44.15 |
-| Sindhi | 38.83 | 50.35 | 33.81 | 45.16 |
-| Tamil | 46.86 | 50.58 | 37.01 | 41.41 |
-| Telugu | 48.49 | 54.17 | 41.93 | 47.39 |
-| Urdu | 61.01 | 61.40 | 54.23 | 58.09 |
-| **Average (macro)** | **46.04** | **53.87** | **41.06** | **50.04** |
+| Assamese | 44.53 | 55.78 | 44.20 | 55.41 |
+| Bengali | 47.18 | 54.23 | 44.68 | 53.41 |
+| Bodo | 49.15 | 52.29 | 46.17 | 49.08 |
+| Dogri | 55.55 | 60.83 | 50.46 | 57.88 |
+| Gujarati | 50.77 | 57.84 | 50.09 | 56.40 |
+| Hindi | 53.12 | 56.77 | 47.18 | 55.13 |
+| Kannada | 48.96 | 55.17 | 31.70 | 43.00 |
+| Kashmiri | 32.89 | 50.20 | 27.30 | 46.91 |
+| Konkani | 43.40 | 49.60 | 41.24 | 45.23 |
+| Maithili | 49.57 | 56.51 | 43.85 | 51.88 |
+| Malayalam | 44.65 | 53.28 | 37.80 | 48.08 |
+| Manipuri | 45.60 | 50.13 | 41.48 | 46.29 |
+| Marathi | 48.47 | 54.77 | 45.74 | 52.68 |
+| Nepali | 49.53 | 58.69 | 49.54 | 57.01 |
+| Odia | 46.05 | 56.99 | 40.73 | 54.33 |
+| Punjabi | 47.11 | 53.66 | 52.44 | 56.02 |
+| Sanskrit | 36.82 | 45.59 | 34.23 | 41.76 |
+| Santali | 40.65 | 43.43 | 42.67 | 44.90 |
+| Sindhi | 39.47 | 50.26 | 37.03 | 45.81 |
+| Tamil | 47.43 | 50.23 | 37.91 | 41.65 |
+| Telugu | 49.42 | 53.87 | 42.64 | 47.24 |
+| Urdu | 62.61 | 60.99 | 56.33 | 58.29 |
+| **Average (macro)** | **46.95** | **53.69** | **42.97** | **50.38** |
 
 </details>
 
@@ -171,7 +185,7 @@ The repository includes a simple web interface for translating text in the brows
 Below are screenshots of the interface and example translations.
 
 > [!NOTE]
-> The screenshots show the current best model, served as int8 on CPU.
+> The screenshots show the release model, served as int8 on CPU.
 
 <table>
   <tr>

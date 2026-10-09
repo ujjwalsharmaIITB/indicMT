@@ -62,20 +62,22 @@ Written to `evaluation/results/<arm>/<checkpoint>/` (the arm is the checkpoint's
 
 For a checkpoint stored outside `.../checkpoints/`, pass `--output-dir`, or the results land in the wrong place.
 
-## Results in short (current best model)
+## Results in short (release model)
 
 12+12, combined pre-training (step 13,600) then human fine-tuning without replay (step 1,800). Macro chrF++ / BLEU:
 
 | Test set | en→xx chrF++ | en→xx BLEU | xx→en chrF++ | xx→en BLEU |
 |---|---|---|---|---|
-| IN22-Gen | 45.36 | 16.39 | 53.73 | 28.71 |
-| IN22-Conv | 41.06 | 13.01 | 50.04 | 27.62 |
+| IN22-Gen | 46.95 | 19.11 | 53.69 | 29.00 |
+| IN22-Conv | 42.97 | 15.80 | 50.38 | 28.29 |
 
-On IN22-Gen it ranks **5th of 13** published systems on the two-direction mean (49.54) and **4th on en→xx**, with 0.154B
-parameters. The baselines are the published sentence-level, greedy-decoding scores, while ours are corpus-level with
-beam 5, so the comparison is indicative. The checkpoint was chosen on these test sets, so the scores are slightly
-optimistic. Single seed. The release model will be chosen after the deeper architectures finish fine-tuning. Full
-ranking and per-language tables: [`../docs/evaluation.md`](../docs/evaluation.md).
+On IN22-Gen it ranks **3rd of 13** systems on en→xx and 5th of 13 on the two-direction mean (50.32), with 0.154B
+parameters. Most baselines are published sentence-level, greedy-decoding scores, while ours (and IndicTrans2's, which we
+re-ran) are corpus-level with beam 5, so the comparison is indicative. Under the same protocol, IndicMT is slightly but
+significantly ahead of IndicTrans2 1B on en→xx when the 22 directions are pooled (47.11 against 46.53, p = 0.001), and
+IndicTrans2 is clearly ahead on xx→en (62.48 against 53.69). The checkpoint was chosen on these test sets, so the
+scores are slightly optimistic. Single seed. Full ranking and per-language tables:
+[`../docs/evaluation.md`](../docs/evaluation.md).
 
 ## Baselines
 
@@ -83,11 +85,15 @@ ranking and per-language tables: [`../docs/evaluation.md`](../docs/evaluation.md
 12 systems, plus a per-language table for three of them. They are taken as published and not re-run. No IN22-Conv baseline
 exists. Systems marked partial (translategemma) cover only 16 of the 22 languages.
 
+The docs' ranking makes one exception: we re-ran IndicTrans2's 1B models with our protocol (beam 5, corpus-level
+chrF++) and report those scores, 46.39 / 62.48, instead of the card's 48.6 / 62.8. `baselines.py` itself keeps the
+card values.
+
 ## Quantization significance
 
 `quant_significance.py` uses sacreBLEU's paired bootstrap on chrF++ with float32 as the baseline, per direction and pooled
 per bucket, with a Bonferroni correction. Job21 runs it after re-translating IN22-Gen with each quantized variant. On the
-current best model, int16 is indistinguishable from float32. int8 costs 0.13 chrF++ (en→xx) and 0.06 (xx→en). See
+release model, with training-format inputs, neither int16 nor int8 is significantly different from float32 (pooled p = 0.18 for int8 en→xx and 0.15 for xx→en). See
 [`../docs/deployment.md`](../docs/deployment.md).
 
 ## Comparing two systems

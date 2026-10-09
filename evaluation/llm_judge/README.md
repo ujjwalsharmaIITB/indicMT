@@ -32,18 +32,12 @@ Run these before trusting any number (`--sanity`):
   perfect 5/5/5 on about 79% of items. It is below the expected value because the judge flags real errors in the IN22
   references. Santali (identity overall 3.88) and Manipuri (4.02) are unreliable for this judge.
 
-## Results in short
+## Results
 
-| Model | Variant | Perfect | Fluency | Adequacy | Overall |
-|---|---|---|---|---|---|
-| Current best (step 1,800) | V2, with reference | 46.7% | 4.04 | 4.16 | 3.80 |
-| Current best (step 1,800) | V1, reference-free | 50.1% | 4.10 | 4.22 | 3.87 |
-| Replay (step 2,000) | V2 | 44.9% | 4.02 | 4.13 | 3.77 |
-| Replay (step 2,000) | V1 | 48.5% | 4.07 | 4.19 | 3.84 |
-
-The current best model scores higher on the conversational set (54.7% perfect under V2) than on IN22-Gen (34.8%). V1 and
-V2 agree within about 3.5 points. Against the human references' own 79%, 46.7% is about 59% of the ceiling. Per-language
-tables are in [`../../docs/evaluation.md`](../../docs/evaluation.md).
+Being re-run. The results published earlier were computed on translations produced with an older source encoding
+that differed from training (see [`../../docs/evaluation.md`](../../docs/evaluation.md), section 2). They are
+withdrawn, and the judge is being re-run on the release model's corrected translations. The sanity checks above test
+the judge itself and still stand.
 
 ## Run
 
