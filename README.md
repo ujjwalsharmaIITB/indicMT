@@ -176,6 +176,7 @@ CTranslate2 conversion and quantization → API and frontend.
 | [`evaluation/`](evaluation/README.md) | chrF++ and BLEU harness, baselines, quantization significance, translation packaging | [`docs/evaluation.md`](docs/evaluation.md) |
 | [`evaluation/llm_judge/`](evaluation/llm_judge/README.md) | LLM-as-judge scoring | [`docs/evaluation.md`](docs/evaluation.md) |
 | [`deployment/`](deployment/README.md) | CTranslate2 conversion, quantization, FastAPI backend, frontend, Docker | [`docs/deployment.md`](docs/deployment.md) |
+| [`huggingface/`](huggingface/README.md) | Model card, manifest and staging script for the Hugging Face model repository (weights are not tracked) | |
 | [`scripts/`](scripts/README.md) | SLURM job templates (Job1 to Job23) | |
 | [`docs/`](docs/README.md) | Plain-language write-ups | |
 
@@ -256,7 +257,7 @@ Follow the READMEs in order: `data/`, `mixing/`, `tokenizer/`, `training/`, `eva
 
 ### Translate with the released model
 
-Weights at `<WEIGHTS_URL>`.
+Weights: `<WEIGHTS_URL>` (Hugging Face). The repository's model card, with a CTranslate2 example that encodes inputs exactly as in training, is [`huggingface/README.md`](huggingface/README.md).
 
 ```bash
 # minimal CPU environment: no PyTorch or OpenNMT-py needed

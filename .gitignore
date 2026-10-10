@@ -48,6 +48,15 @@ deployment/api/common/
 # optional score file for the frontend's Benchmarks tab
 deployment/frontend/benchmarks.json
 
+# Hugging Face model repository (huggingface/): the card, manifest and staging script are tracked;
+# the model files and tokenizer copied in by huggingface/prepare_repo.py are not
+huggingface/float32/
+huggingface/int16/
+huggingface/int8/
+huggingface/*.model
+huggingface/*.vocab
+huggingface/*.bin
+
 # release assets built locally
 *.tar.gz
 

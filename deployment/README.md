@@ -51,7 +51,7 @@ serving choice. Job21 (`scripts/slurm/deployment_quant_significance.sh`) runs th
 
 ## 2. Run the API (no container needed)
 
-Get the model from `<WEIGHTS_URL>`, or convert your own (step 1). Stage the int8 model and the tokenizer:
+Get the model from `<WEIGHTS_URL>` (the Hugging Face repository; its model card is [`../huggingface/README.md`](../huggingface/README.md)), or convert your own (step 1). Stage the int8 model and the tokenizer:
 
 ```bash
 pip install -r requirements-deploy.txt   # minimal serving environment (CPU, no PyTorch)
