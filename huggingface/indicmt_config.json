@@ -1,8 +1,21 @@
 {
   "name": "IndicMT",
-  "format": "ctranslate2",
-  "requires": {"ctranslate2": "4.8.2", "sentencepiece": "0.2.2"},
-  "tokenizer": "spm_128000.model",
+  "format": [
+    "ctranslate2",
+    "opennmt-py"
+  ],
+  "requires": {
+    "ctranslate2": {
+      "ctranslate2": "4.8.2",
+      "sentencepiece": "0.2.2"
+    },
+    "opennmt-py": {
+      "torch": "2.2.0",
+      "OpenNMT-py": "3.5.1",
+      "sentencepiece": "0.2.2"
+    }
+  },
+  "tokenizer": "indicMT.spm.model",
   "architecture": {
     "type": "transformer",
     "encoder_layers": 12,
@@ -15,43 +28,221 @@
   },
   "checkpoint": "12+12, combined 8:2 mined:human pre-training step 13600, then human-only fine-tune without replay step 1800",
   "variants": {
-    "int8": {"path": "int8", "compute_type": "int8", "size_mb": 170.6, "recommended": true,
-             "in22_gen_chrf++": {"en-xx": 47.16, "xx-en": 53.85}},
-    "float32": {"path": "float32", "compute_type": "float32", "size_mb": 630.4, "recommended": false,
-                "in22_gen_chrf++": {"en-xx": 47.15, "xx-en": 53.87}}
+    "int8": {
+      "path": "indicMT",
+      "compute_type": "int8",
+      "size_mb": 170.6,
+      "recommended": true,
+      "in22_gen_chrf++": {
+        "en-xx": 47.16,
+        "xx-en": 53.85
+      }
+    },
+    "opennmt-py": {
+      "path": "indicMT.pt",
+      "format": "opennmt-py",
+      "dtype": "float32",
+      "size_mb": 2397.6,
+      "recommended": false,
+      "includes_optimizer_state": true,
+      "in22_gen_chrf++": {
+        "en-xx": 46.95,
+        "xx-en": 53.69
+      },
+      "in22_conv_chrf++": {
+        "en-xx": 42.97,
+        "xx-en": 50.38
+      }
+    }
   },
   "source_format": {
     "template": "<{tgt}> {text}",
     "encode": "sp.encode(template, out_type=str) on the whole string, never tag + sp.encode(text)",
-    "expected_prefix": ["▁", "<{tgt}>"],
+    "expected_prefix": [
+      "▁",
+      "<{tgt}>"
+    ],
     "tag_names": "the target language"
   },
   "target_format": "SentencePiece pieces without a tag; detokenize with sp.decode",
-  "decoding": {"beam_size": 5, "max_source_pieces_in_training": 200},
+  "decoding": {
+    "beam_size": 5,
+    "max_source_pieces_in_training": 200
+  },
   "pivot": "Indic to Indic: translate to English (<en>) first, then to the target",
   "languages": {
-    "en":  {"tag": "<en>",  "iso_639": "en",  "code": "eng_Latn", "name": "English",   "script": "Latin"},
-    "as":  {"tag": "<as>",  "iso_639": "as",  "code": "asm_Beng", "name": "Assamese",  "script": "Bengali"},
-    "bn":  {"tag": "<bn>",  "iso_639": "bn",  "code": "ben_Beng", "name": "Bengali",   "script": "Bengali"},
-    "br":  {"tag": "<br>",  "iso_639": "brx", "code": "brx_Deva", "name": "Bodo",      "script": "Devanagari"},
-    "doi": {"tag": "<doi>", "iso_639": "doi", "code": "doi_Deva", "name": "Dogri",     "script": "Devanagari"},
-    "gom": {"tag": "<gom>", "iso_639": "gom", "code": "gom_Deva", "name": "Konkani",   "script": "Devanagari"},
-    "gu":  {"tag": "<gu>",  "iso_639": "gu",  "code": "guj_Gujr", "name": "Gujarati",  "script": "Gujarati"},
-    "hi":  {"tag": "<hi>",  "iso_639": "hi",  "code": "hin_Deva", "name": "Hindi",     "script": "Devanagari"},
-    "kn":  {"tag": "<kn>",  "iso_639": "kn",  "code": "kan_Knda", "name": "Kannada",   "script": "Kannada"},
-    "ks":  {"tag": "<ks>",  "iso_639": "ks",  "code": "kas_Arab", "name": "Kashmiri",  "script": "Perso-Arabic"},
-    "mai": {"tag": "<mai>", "iso_639": "mai", "code": "mai_Deva", "name": "Maithili",  "script": "Devanagari"},
-    "ml":  {"tag": "<ml>",  "iso_639": "ml",  "code": "mal_Mlym", "name": "Malayalam", "script": "Malayalam"},
-    "mr":  {"tag": "<mr>",  "iso_639": "mr",  "code": "mar_Deva", "name": "Marathi",   "script": "Devanagari"},
-    "mni": {"tag": "<mni>", "iso_639": "mni", "code": "mni_Mtei", "name": "Manipuri",  "script": "Meitei (Meetei Mayek)"},
-    "ne":  {"tag": "<ne>",  "iso_639": "ne",  "code": "npi_Deva", "name": "Nepali",    "script": "Devanagari"},
-    "or":  {"tag": "<or>",  "iso_639": "or",  "code": "ory_Orya", "name": "Odia",      "script": "Odia"},
-    "pa":  {"tag": "<pa>",  "iso_639": "pa",  "code": "pan_Guru", "name": "Punjabi",   "script": "Gurmukhi"},
-    "sa":  {"tag": "<sa>",  "iso_639": "sa",  "code": "san_Deva", "name": "Sanskrit",  "script": "Devanagari"},
-    "sd":  {"tag": "<sd>",  "iso_639": "sd",  "code": "snd_Deva", "name": "Sindhi",    "script": "Devanagari"},
-    "sat": {"tag": "<sat>", "iso_639": "sat", "code": "sat_Olck", "name": "Santali",   "script": "Ol Chiki"},
-    "ta":  {"tag": "<ta>",  "iso_639": "ta",  "code": "tam_Taml", "name": "Tamil",     "script": "Tamil"},
-    "te":  {"tag": "<te>",  "iso_639": "te",  "code": "tel_Telu", "name": "Telugu",    "script": "Telugu"},
-    "ur":  {"tag": "<ur>",  "iso_639": "ur",  "code": "urd_Arab", "name": "Urdu",      "script": "Perso-Arabic"}
+    "en": {
+      "tag": "<en>",
+      "iso_639": "en",
+      "code": "eng_Latn",
+      "name": "English",
+      "script": "Latin"
+    },
+    "as": {
+      "tag": "<as>",
+      "iso_639": "as",
+      "code": "asm_Beng",
+      "name": "Assamese",
+      "script": "Bengali"
+    },
+    "bn": {
+      "tag": "<bn>",
+      "iso_639": "bn",
+      "code": "ben_Beng",
+      "name": "Bengali",
+      "script": "Bengali"
+    },
+    "br": {
+      "tag": "<br>",
+      "iso_639": "brx",
+      "code": "brx_Deva",
+      "name": "Bodo",
+      "script": "Devanagari"
+    },
+    "doi": {
+      "tag": "<doi>",
+      "iso_639": "doi",
+      "code": "doi_Deva",
+      "name": "Dogri",
+      "script": "Devanagari"
+    },
+    "gom": {
+      "tag": "<gom>",
+      "iso_639": "gom",
+      "code": "gom_Deva",
+      "name": "Konkani",
+      "script": "Devanagari"
+    },
+    "gu": {
+      "tag": "<gu>",
+      "iso_639": "gu",
+      "code": "guj_Gujr",
+      "name": "Gujarati",
+      "script": "Gujarati"
+    },
+    "hi": {
+      "tag": "<hi>",
+      "iso_639": "hi",
+      "code": "hin_Deva",
+      "name": "Hindi",
+      "script": "Devanagari"
+    },
+    "kn": {
+      "tag": "<kn>",
+      "iso_639": "kn",
+      "code": "kan_Knda",
+      "name": "Kannada",
+      "script": "Kannada"
+    },
+    "ks": {
+      "tag": "<ks>",
+      "iso_639": "ks",
+      "code": "kas_Arab",
+      "name": "Kashmiri",
+      "script": "Perso-Arabic"
+    },
+    "mai": {
+      "tag": "<mai>",
+      "iso_639": "mai",
+      "code": "mai_Deva",
+      "name": "Maithili",
+      "script": "Devanagari"
+    },
+    "ml": {
+      "tag": "<ml>",
+      "iso_639": "ml",
+      "code": "mal_Mlym",
+      "name": "Malayalam",
+      "script": "Malayalam"
+    },
+    "mr": {
+      "tag": "<mr>",
+      "iso_639": "mr",
+      "code": "mar_Deva",
+      "name": "Marathi",
+      "script": "Devanagari"
+    },
+    "mni": {
+      "tag": "<mni>",
+      "iso_639": "mni",
+      "code": "mni_Mtei",
+      "name": "Manipuri",
+      "script": "Meitei (Meetei Mayek)"
+    },
+    "ne": {
+      "tag": "<ne>",
+      "iso_639": "ne",
+      "code": "npi_Deva",
+      "name": "Nepali",
+      "script": "Devanagari"
+    },
+    "or": {
+      "tag": "<or>",
+      "iso_639": "or",
+      "code": "ory_Orya",
+      "name": "Odia",
+      "script": "Odia"
+    },
+    "pa": {
+      "tag": "<pa>",
+      "iso_639": "pa",
+      "code": "pan_Guru",
+      "name": "Punjabi",
+      "script": "Gurmukhi"
+    },
+    "sa": {
+      "tag": "<sa>",
+      "iso_639": "sa",
+      "code": "san_Deva",
+      "name": "Sanskrit",
+      "script": "Devanagari"
+    },
+    "sd": {
+      "tag": "<sd>",
+      "iso_639": "sd",
+      "code": "snd_Deva",
+      "name": "Sindhi",
+      "script": "Devanagari"
+    },
+    "sat": {
+      "tag": "<sat>",
+      "iso_639": "sat",
+      "code": "sat_Olck",
+      "name": "Santali",
+      "script": "Ol Chiki"
+    },
+    "ta": {
+      "tag": "<ta>",
+      "iso_639": "ta",
+      "code": "tam_Taml",
+      "name": "Tamil",
+      "script": "Tamil"
+    },
+    "te": {
+      "tag": "<te>",
+      "iso_639": "te",
+      "code": "tel_Telu",
+      "name": "Telugu",
+      "script": "Telugu"
+    },
+    "ur": {
+      "tag": "<ur>",
+      "iso_639": "ur",
+      "code": "urd_Arab",
+      "name": "Urdu",
+      "script": "Perso-Arabic"
+    }
+  },
+  "reported_results": {
+    "model": "CTranslate2 float32 conversion of indicMT.pt",
+    "beam_size": 5,
+    "in22_gen_chrf++": {
+      "en-xx": 47.15,
+      "xx-en": 53.87
+    },
+    "in22_conv_chrf++": {
+      "en-xx": 43.15,
+      "xx-en": 50.59
+    }
   }
 }

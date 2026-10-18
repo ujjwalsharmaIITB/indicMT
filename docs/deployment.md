@@ -5,7 +5,7 @@ quantization, the API and frontend, and what has and has not been verified. Code
 [`../deployment/`](../deployment/README.md).
 
 The model served is the **release model** (12+12, combined pre-training, then human fine-tuning without replay,
-step 1,800). Weights will be linked from `<WEIGHTS_URL>`.
+step 1,800). Weights: [ujjwalsharmaIITB/indicMT](https://huggingface.co/ujjwalsharmaIITB/indicMT) on Hugging Face.
 
 ## 1. Why CPU serving
 
@@ -68,8 +68,8 @@ throughput are from the first conversion run. They were not re-measured after th
 to each source.
 
 CTranslate2 float32 scores this model 0.20 chrF++ higher on en→xx than `onmt_translate` does (47.15 against 46.95;
-xx→en 53.87 against 53.69). The cause has not been isolated, so the headline numbers in these docs stay the
-`onmt_translate` ones. Sizes are byte-identical across checkpoints, because quantized size depends on the
+xx→en 53.87 against 53.69). The cause has not been isolated. **The reported results are the CTranslate2 float32
+ones.** Sizes are byte-identical across checkpoints, because quantized size depends on the
 architecture, not the weights.
 
 ### Does quantization change the translations? A significance test
@@ -115,9 +115,10 @@ A FastAPI service (`deployment/api/`) exposes:
 - `GET /api/health`: model identity (checkpoint name, quantization) and a notice string.
 
 A plain HTML, CSS and JS frontend (`deployment/frontend/`) calls the API over real HTTP and has two views: a Translate
-view and a Benchmarks view with the published baselines. The Benchmarks view reads `baselines.json` (published
-numbers, kept in the repository because the view needs it) and, if present, a `benchmarks.json` file with IndicMT's own
-scores, which you can copy in from `evaluation/results/.../scores.json`. The API and frontend run and have been
+view and a Benchmarks view comparing IndicMT with other systems. The Benchmarks view reads `baselines.json` (kept in
+the repository because the view needs it: IndicTrans2 from our own run, the other systems from the
+`bodhan-ai/indic-translate` model page) and, if present, a `benchmarks.json` file with IndicMT's own scores: the
+CTranslate2 float32 reports written by `deployment/ct2_eval.py` (IN22-Gen and IN22-Conv merged into one file). The API and frontend run and have been
 verified directly on a node, outside a container.
 
 Settings are environment variables: `MODEL_DIR`, `SPM_PATH`, `CHECKPOINT_NAME` (default `indicmt-final-int8`),

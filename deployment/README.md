@@ -3,7 +3,7 @@
 This directory turns a trained checkpoint into a small CPU-served model with a FastAPI backend and a plain HTML/JS
 frontend. The explanation and all numbers are in [`../docs/deployment.md`](../docs/deployment.md). The model served is the
 **release model** (12+12, combined pre-training then human fine-tuning without replay, step 1,800), converted to
-**int8** (170.6 MB, runs on CPU). Weights will be linked from `<WEIGHTS_URL>`.
+**int8** (170.6 MB, runs on CPU). Weights: [ujjwalsharmaIITB/indicMT](https://huggingface.co/ujjwalsharmaIITB/indicMT) on Hugging Face.
 
 ## Files
 
@@ -51,13 +51,18 @@ serving choice. Job21 (`scripts/slurm/deployment_quant_significance.sh`) runs th
 
 ## 2. Run the API (no container needed)
 
-Get the model from `<WEIGHTS_URL>` (the Hugging Face repository; its model card is [`../huggingface/README.md`](../huggingface/README.md)), or convert your own (step 1). Stage the int8 model and the tokenizer:
+Get the model from [Hugging Face](https://huggingface.co/ujjwalsharmaIITB/indicMT) (its model card is [`../huggingface/README.md`](../huggingface/README.md)), or convert your own (step 1). Stage the int8 model and the tokenizer:
 
 ```bash
 pip install -r requirements-deploy.txt   # minimal serving environment (CPU, no PyTorch)
 mkdir -p deployment/model/ct2_model
-cp -r 128k-spm/opennmt/bpcc-ft-combined-human/ct2/model_step_1800/int8/* deployment/model/ct2_model/
-cp tokenizer/sweep/mixed/spm_128000.model deployment/model/spm_128000.model
+# from Hugging Face:
+huggingface-cli download ujjwalsharmaIITB/indicMT --include "indicMT/*" "indicMT.spm.model" --local-dir hf-indicmt
+cp hf-indicmt/indicMT/* deployment/model/ct2_model/
+cp hf-indicmt/indicMT.spm.model deployment/model/spm_128000.model
+# or from your own conversion:
+# cp -r 128k-spm/opennmt/bpcc-ft-combined-human/ct2/model_step_1800/int8/* deployment/model/ct2_model/
+# cp tokenizer/sweep/mixed/spm_128000.model deployment/model/spm_128000.model
 python deployment/stage_common.py
 
 # quick command-line check of the raw CTranslate2 model
@@ -101,12 +106,14 @@ Settings are environment variables:
 
 `frontend/` has two tabs: **Translate** (searchable language pickers, swap, copy, character counter, light, dark and system
 themes, direct-or-pivot route badge, recent translations kept in browser storage) and **Benchmarks** (sortable and
-filterable charts against published baselines). It uses system fonts only and works offline.
+filterable charts against other systems). It uses system fonts only and works offline.
 
-The Benchmarks tab reads `frontend/baselines.json`, a small file of published baseline scores. **The frontend needs it to
-draw the comparison charts, so it is kept in the repository.** It is read from a public model card and not re-run. The tab
-also reads an optional `frontend/benchmarks.json` with IndicMT's own scores. That file is a copy of a `scores.json` from
-`evaluation/results/` and is not tracked. Without it the tab shows only the published baselines.
+The Benchmarks tab reads `frontend/baselines.json`, a small file of baseline scores. **The frontend needs it to draw
+the comparison charts, so it is kept in the repository.** IndicTrans2 is our own run; the other baselines are taken from
+the [`bodhan-ai/indic-translate`](https://huggingface.co/bodhan-ai/indic-translate) model page. The tab also reads an
+optional `frontend/benchmarks.json` with IndicMT's own scores: the CTranslate2 float32 reports from
+`deployment/ct2_eval.py`, with IN22-Gen and IN22-Conv merged into one file. It is not tracked. Without it the tab shows
+only the baselines.
 
 ## 4. Container build
 

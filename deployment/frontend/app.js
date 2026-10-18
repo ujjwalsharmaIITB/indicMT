@@ -640,12 +640,12 @@ function buildModels() {
 async function loadBenchmarks() {
   bench.loaded = true;
   const banner = $("benchmarks-banner");
-  banner.textContent = "Baselines are taken from a published model card and were not re-run. Protocols differ, so comparisons are indicative.";
+  banner.textContent = "IndicMT and IndicTrans2 are our own runs; other baselines are from the Indic Translate model page. Protocols differ, so comparisons are indicative.";
   banner.classList.remove("hidden");
   const [ours, base] = await Promise.allSettled([fetchJson("benchmarks.json"), fetchJson("baselines.json")]);
   bench.base = base.status === "fulfilled" ? base.value : null;
   if (ours.status === "fulfilled") bench.data = ours.value;
-  else { banner.textContent = "No IndicMT score file (benchmarks.json) was added to this build; only the published baselines are shown."; bench.loaded = false; }
+  else { banner.textContent = "No IndicMT score file (benchmarks.json) was added to this build; only the baselines are shown."; bench.loaded = false; }
   try {
     buildModels();
     loadBenchPrefs();
@@ -908,7 +908,7 @@ function renderRankCharts() {
   const a = el("a", null, base.source.name); a.href = base.source.url; a.rel = "noopener noreferrer"; a.target = "_blank";
   p.append(a, ` (fetched ${base.source.fetched}).`);
   notes.append(p, el("p", "bench-foot",
-    "Baselines are the card's sentence-level chrF++ with greedy decoding, as published. Ours is corpus-level chrF++ with beam 5, so the comparison is indicative, not exact."));
+    "IndicMT (CTranslate2 float32) and IndicTrans2 are corpus-level chrF++ with beam 5, from our own runs. Other baselines are sentence-level chrF++ with greedy decoding, from the Indic Translate model page, so the comparison is indicative, not exact."));
   applyEmphasis();
 }
 
@@ -1202,7 +1202,7 @@ function renderBenchmarksNow(animate) {
     tipSpecs.set(tr, () => {
       const lines = [`BLEU ${s.bleu.toFixed(2)}`];
       marks.forEach((m) => lines.push({ text: `${m.name} ${m.v.toFixed(1)} chrF++`, key: `var(--bm-${m.idx % 3})` }));
-      if (!marks.length && bench.set === "in22-gen" && bench.markIdx.size && bench.hidden.size < bench.markIdx.size) lines.push("No per-language baseline values published for this direction.");
+      if (!marks.length && bench.set === "in22-gen" && bench.markIdx.size && bench.hidden.size < bench.markIdx.size) lines.push("No per-language baseline values for this direction.");
       return { value: `${s["chrf++"].toFixed(2)} chrF++`, name: `${dir} · ${langLabel(lang)}`, key: "var(--bench-fill-1)", lines };
     });
     tbody.append(tr);

@@ -53,6 +53,10 @@ deployment/frontend/benchmarks.json
 huggingface/float32/
 huggingface/int16/
 huggingface/int8/
+huggingface/indicMT/
+hf-indicmt/
+huggingface/*.pt
+huggingface/assets/
 huggingface/*.model
 huggingface/*.vocab
 huggingface/*.bin

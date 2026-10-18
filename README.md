@@ -8,6 +8,7 @@
 [![Python 3.10 | 3.11](https://img.shields.io/badge/python-3.10%20%7C%203.11-4F46E5.svg)](requirements-train.txt)
 [![OpenNMT-py 3.5.1](https://img.shields.io/badge/OpenNMT--py-3.5.1-7C3AED.svg)](requirements-train.txt)
 [![CTranslate2 4.8.2](https://img.shields.io/badge/CTranslate2-4.8.2-7C3AED.svg)](requirements-train.txt)
+[![Model on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20model-ujjwalsharmaIITB%2FindicMT-FFD21E.svg)](https://huggingface.co/ujjwalsharmaIITB/indicMT)
 <br/>
 ![Languages: 23](https://img.shields.io/badge/languages-23-A855F7.svg)
 ![Directions: 44](https://img.shields.io/badge/directions-44-A855F7.svg)
@@ -40,49 +41,74 @@ scripts and are not stored here.
 
 ## Results
 
+<p align="center"><img src="docs/images/in22-gen-comparision-chart.png" alt="IN22-Gen English to Indic chrF++: IndicMT 47.15 against other systems" width="100%"/></p>
+
 Release model: 12+12 layers, pre-trained on the combined 8:2 (mined to human) data (step 13,600), then fine-tuned on
-human data without replay (step 1,800). Macro average over the 22 languages, chrF++, OpenNMT-py (`onmt_translate`,
-beam 5):
+human data without replay (step 1,800). Macro average over the 22 languages, chrF++, **CTranslate2 float32 model**
+(beam 5; see [Quantization and the reported model](#quantization-and-the-reported-model)):
 
 | Test set | en→xx | xx→en |
 |---|---:|---:|
-| IN22-Gen | **46.95** | **53.69** |
-| IN22-Conv | **42.97** | **50.38** |
+| IN22-Gen | **47.15** | **53.87** |
+| IN22-Conv | **43.15** | **50.59** |
 
-- **chrF++** is a character n-gram F-score. Higher is better. BLEU for the same model: IN22-Gen 19.11 (en→xx) and
-  29.00 (xx→en); IN22-Conv 15.80 and 28.29.
-- **CPU inference** (CTranslate2, beam 5, IN22-Gen): float32 47.15 / 53.87 and int8 47.16 / 53.85. **int8 is not
-  significantly different from float32** (paired bootstrap, pooled p = 0.18 en→xx and 0.15 xx→en; 0 of 22 directions
-  after Bonferroni correction), and it is 3.7 times smaller.
-- Against 12 published systems on IN22-Gen, IndicMT ranks **3rd of 13 on en→xx**, 9th on xx→en and 5th of 13 on the
-  two-direction mean, with far fewer parameters (0.154B, against 1.1B to 30.7B). The comparison is indicative: the
-  baselines are model-card scores (sentence-level, greedy decoding), except IndicTrans2, which we re-ran with our
-  protocol; ours and IndicTrans2's are corpus-level with beam 5.
-- **Against IndicTrans2 1B under the same protocol** (IN22-Gen, paired bootstrap): IndicMT is slightly but
-  significantly ahead on en→xx when the 22 directions are pooled (47.11 against 46.53, p = 0.001), though per
-  direction it is split (11 directions better, 10 worse at p < 0.05). IndicTrans2 is clearly ahead on xx→en (62.48
-  against 53.69) and has 1.1B parameters, 7.2 times more than IndicMT.
-- **LLM judge** (Gemma 4 31B-it, English to Indic): being re-run on the corrected translations. The earlier judge
-  results used translations from the old source encoding and are withdrawn.
+- **chrF++** is a character n-gram F-score. Higher is better. BLEU for the same model: IN22-Gen 19.19 (en→xx) and
+  29.19 (xx→en); IN22-Conv 15.73 and 28.36.
+- **Against IndicTrans2 1B under the same protocol** (paired bootstrap, 22 directions pooled): IndicMT is slightly but
+  significantly ahead on en→xx on IN22-Gen (47.31 against 46.53, p = 0.001; 11 directions better, 8 worse at
+  p < 0.05) and on IN22-Conv (43.23 against 42.60, p = 0.001; 8 better, 13 worse). IndicTrans2 is clearly ahead on xx→en (62.48 against 53.87 on IN22-Gen,
+  55.63 against 50.59 on IN22-Conv) and has 1.1B parameters, 7.2 times more than IndicMT.
+- **LLM judge** (Gemma 4 31B-it, en→xx): evaluation in progress.
 
-> [!NOTE]
-> **Corrected scores (October 2026).** Earlier versions of this page reported scores computed with a source encoding
-> that differed from training by one SentencePiece piece (a lone `▁` before the language tag). Training, evaluation
-> and serving now share one encoding function ([`data/common/tokenization.py`](data/common/tokenization.py)). The fix
-> raised en→xx by about 2 chrF++ on average and left xx→en nearly unchanged. Details:
-> [`docs/evaluation.md`](docs/evaluation.md#2-source-encoding).
+### Compared with other systems
 
-> [!WARNING]
-> **Caveats.** The release model is a **single training run**. Two extra seeds of the human-only arm reproduce that
-> arm's chrF++ curve (38.3, 38.3 and 38.5 en→xx on IN22-Gen at step 2,000), but the seed variance of the release model
-> itself is not measured. Checkpoints were **selected using the IN22 test sets**, so the IN22 scores carry a small
-> optimistic bias. Under the corrected scores, a few other checkpoints are up to 0.2 chrF++ higher on the mean of the
-> four IN22 buckets (48.70 against 48.50; single seed, not significance-tested). The release model was kept. See
-> [`docs/training.md`](docs/training.md).
+chrF++, macro average over the 22 languages. **IndicMT (CTranslate2 float32), IndicTrans2, Indic Translate and Sarvam Translate are from
+our own runs** (corpus-level chrF++; beam 5 for IndicMT and IndicTrans2, greedy decoding for the two LLMs). Our runs
+of Indic Translate and Sarvam Translate are in progress; until they finish, their rows show the scores from the Indic
+Translate page. **All other baselines are taken from the
+[`bodhan-ai/indic-translate`](https://huggingface.co/bodhan-ai/indic-translate) model page** (read on 2026-09-19),
+which reports sentence-level chrF++ with greedy decoding on IN22-Gen only, so those rows are indicative. A star marks a
+system that covers only 16 of the 22 languages.
+
+| Model | Parameters | IN22-Gen en→xx | IN22-Gen xx→en | IN22-Conv en→xx | IN22-Conv xx→en | Source |
+|---|---:|---:|---:|---:|---:|---|
+| **IndicMT (release model)** | **0.154B** | **47.15** | **53.87** | **43.15** | **50.59** | our run |
+| IndicTrans2 1B | 1.1B | 46.39 | 62.48 | 42.61 | 55.63 | our run |
+| Indic Translate | 7.94B | 47.70 | 60.40 | | | Indic Translate page (our run in progress) |
+| Sarvam Translate | 4B | 48.90 | 52.40 | | | Indic Translate page (our run in progress) |
+| gemini-3.5-flash | undisclosed | 40.30 | 66.60 | | | Indic Translate page |
+| gemma-4-31B-it | 30.7B | 39.20 | 59.60 | | | Indic Translate page |
+| translategemma-27b-it * | 27B | 39.60 | 58.50 | | | Indic Translate page |
+| gemma-4-26B-a4b-it | 25.2B | 36.20 | 56.60 | | | Indic Translate page |
+| translategemma-12b-it * | 12B | 37.10 | 55.00 | | | Indic Translate page |
+| gemma-3-27b-it | 27.43B | 31.90 | 55.50 | | | Indic Translate page |
+| gemma-3-12b-it | 12.19B | 28.80 | 53.20 | | | Indic Translate page |
+| translategemma-4b-it * | 4B | 31.20 | 49.20 | | | Indic Translate page |
+| gemma-3-4b-it | 4.3B | 22.90 | 47.10 | | | Indic Translate page |
+
+Parameter counts come from each model's public page; see [`docs/evaluation.md`](docs/evaluation.md#5-against-published-systems-in22-gen-only).
+
+### Quantization and the reported model
+
+**All results on this page are from the CTranslate2 float32 model**, the release checkpoint (OpenNMT-py step 1,800)
+converted to CTranslate2 without quantization. The Hugging Face repository ships the OpenNMT-py checkpoint and the int8
+CTranslate2 model. chrF++, beam 5; latency is the median for one sentence on CPU (8 threads), IN22-Gen.
+
+| Model | IN22-Gen en→xx | IN22-Gen xx→en | IN22-Conv en→xx | IN22-Conv xx→en | p50 latency | Size |
+|---|---:|---:|---:|---:|---:|---:|
+| OpenNMT-py checkpoint (`onmt_translate`) | 46.95 | 53.69 | 42.97 | 50.38 | | 2.4 GB |
+| **CTranslate2 float32 (reported)** | **47.15** | **53.87** | **43.15** | **50.59** | 399.2 ms | 630.4 MB |
+| CTranslate2 int16 | 47.15 | 53.86 | | | 367.1 ms | 323.2 MB |
+| CTranslate2 int8 (released) | 47.16 | 53.85 | | | 374.2 ms | 170.6 MB |
+
+The checkpoint and the CTranslate2 float32 model have the same weights; their scores differ by about 0.2 chrF++
+because the two decoders differ. int16 and int8 are **not significantly different from float32** on IN22-Gen (paired
+bootstrap, pooled p = 0.18 en→xx and 0.15 xx→en for int8; 0 of 22 directions after Bonferroni correction). int8 is
+3.7 times smaller than float32. The checkpoint's size includes the optimizer state.
 
 ### Results by language (release model)
 
-chrF++ through OpenNMT-py (beam 5) on IN22-Gen and IN22-Conv. The fuller version, with the best published score per
+chrF++ of the CTranslate2 float32 model (beam 5) on IN22-Gen and IN22-Conv. The fuller version, with the best published score per
 language, is in [`docs/evaluation.md`](docs/evaluation.md).
 
 <details>
@@ -91,29 +117,29 @@ language, is in [`docs/evaluation.md`](docs/evaluation.md).
 
 | Language | IN22-Gen en→xx | IN22-Gen xx→en | IN22-Conv en→xx | IN22-Conv xx→en |
 |---|---:|---:|---:|---:|
-| Assamese | 44.53 | 55.78 | 44.20 | 55.41 |
-| Bengali | 47.18 | 54.23 | 44.68 | 53.41 |
-| Bodo | 49.15 | 52.29 | 46.17 | 49.08 |
-| Dogri | 55.55 | 60.83 | 50.46 | 57.88 |
-| Gujarati | 50.77 | 57.84 | 50.09 | 56.40 |
-| Hindi | 53.12 | 56.77 | 47.18 | 55.13 |
-| Kannada | 48.96 | 55.17 | 31.70 | 43.00 |
-| Kashmiri | 32.89 | 50.20 | 27.30 | 46.91 |
-| Konkani | 43.40 | 49.60 | 41.24 | 45.23 |
-| Maithili | 49.57 | 56.51 | 43.85 | 51.88 |
-| Malayalam | 44.65 | 53.28 | 37.80 | 48.08 |
-| Manipuri | 45.60 | 50.13 | 41.48 | 46.29 |
-| Marathi | 48.47 | 54.77 | 45.74 | 52.68 |
-| Nepali | 49.53 | 58.69 | 49.54 | 57.01 |
-| Odia | 46.05 | 56.99 | 40.73 | 54.33 |
-| Punjabi | 47.11 | 53.66 | 52.44 | 56.02 |
-| Sanskrit | 36.82 | 45.59 | 34.23 | 41.76 |
-| Santali | 40.65 | 43.43 | 42.67 | 44.90 |
-| Sindhi | 39.47 | 50.26 | 37.03 | 45.81 |
-| Tamil | 47.43 | 50.23 | 37.91 | 41.65 |
-| Telugu | 49.42 | 53.87 | 42.64 | 47.24 |
-| Urdu | 62.61 | 60.99 | 56.33 | 58.29 |
-| **Average (macro)** | **46.95** | **53.69** | **42.97** | **50.38** |
+| Assamese | 44.74 | 56.02 | 44.58 | 55.39 |
+| Bengali | 47.24 | 54.39 | 45.01 | 53.75 |
+| Bodo | 49.30 | 52.34 | 46.39 | 49.18 |
+| Dogri | 55.86 | 61.04 | 50.64 | 58.29 |
+| Gujarati | 50.88 | 57.92 | 50.21 | 56.42 |
+| Hindi | 53.19 | 56.99 | 47.14 | 55.34 |
+| Kannada | 49.06 | 55.31 | 31.70 | 43.40 |
+| Kashmiri | 32.99 | 50.47 | 27.55 | 47.18 |
+| Konkani | 43.51 | 49.67 | 41.41 | 45.31 |
+| Maithili | 49.69 | 56.72 | 44.08 | 51.92 |
+| Malayalam | 44.83 | 53.35 | 38.19 | 48.49 |
+| Manipuri | 46.26 | 50.29 | 41.64 | 46.54 |
+| Marathi | 48.63 | 54.94 | 46.08 | 52.94 |
+| Nepali | 49.68 | 59.00 | 49.60 | 57.08 |
+| Odia | 46.23 | 57.14 | 40.87 | 54.57 |
+| Punjabi | 47.12 | 53.73 | 52.55 | 56.25 |
+| Sanskrit | 37.26 | 45.86 | 34.35 | 41.76 |
+| Santali | 41.11 | 43.72 | 42.99 | 45.11 |
+| Sindhi | 39.73 | 50.54 | 37.11 | 46.16 |
+| Tamil | 47.63 | 50.60 | 38.19 | 41.90 |
+| Telugu | 49.58 | 54.03 | 42.56 | 47.61 |
+| Urdu | 62.73 | 61.04 | 56.44 | 58.34 |
+| **Average (macro)** | **47.15** | **53.87** | **43.15** | **50.59** |
 
 </details>
 
@@ -257,7 +283,7 @@ Follow the READMEs in order: `data/`, `mixing/`, `tokenizer/`, `training/`, `eva
 
 ### Translate with the released model
 
-Weights: `<WEIGHTS_URL>` (Hugging Face). The repository's model card, with a CTranslate2 example that encodes inputs exactly as in training, is [`huggingface/README.md`](huggingface/README.md).
+Weights: [ujjwalsharmaIITB/indicMT](https://huggingface.co/ujjwalsharmaIITB/indicMT) on Hugging Face, with the OpenNMT-py checkpoint (`indicMT.pt`), the int8 CTranslate2 model (`indicMT/`) and the tokenizer (`indicMT.spm.model`). Its model card, with examples for both models that encode inputs exactly as in training, is kept here as [`huggingface/README.md`](huggingface/README.md).
 
 ```bash
 # minimal CPU environment: no PyTorch or OpenNMT-py needed
@@ -276,7 +302,7 @@ Open `http://localhost:8000/` for the web interface.
 |---|---|
 | Technical report | `<REPORT_URL>` |
 | Blog post | `<BLOG_URL>` |
-| Model weights | `<WEIGHTS_URL>` |
+| Model weights | [huggingface.co/ujjwalsharmaIITB/indicMT](https://huggingface.co/ujjwalsharmaIITB/indicMT) |
 | IN22 translations of the release model | `<TRANSLATIONS_URL>` |
 
 ## Citation

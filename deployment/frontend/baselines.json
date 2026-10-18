@@ -1,10 +1,13 @@
 {
  "source": {
-  "name": "bodhan-ai/indic-translate model card",
+  "name": "bodhan-ai/indic-translate model page",
   "url": "https://huggingface.co/bodhan-ai/indic-translate",
-  "fetched": "2026-09-19"
+  "fetched": "2026-09-19",
+  "own_runs": [
+   "IndicTrans2"
+  ]
  },
- "protocol": "IN22-Gen, 1,024 sentences per direction, 22 languages, chrF++ only, sentence-level chrF++ and greedy decoding as stated on the card; taken as published, not re-run",
+ "protocol": "IN22-Gen, 1,024 sentences per direction, 22 languages, chrF++. IndicTrans2 is our own run (corpus-level chrF++, beam 5). The other baselines are taken from the bodhan-ai/indic-translate model page (sentence-level chrF++, greedy decoding).",
  "partial_note": "Rows marked partial cover only 16 of the 22 IN22-Gen languages (translategemma has no code path for Bodo, Dogri, Konkani, Maithili, Manipuri or Santali) and are not directly comparable to the 22-language aggregates.",
  "macro": [
   {
@@ -17,19 +20,21 @@
     "active_b": null,
     "kind": "rounded",
     "note": "Hugging Face model page shows '4B params'; fine-tuned from Gemma 3 4B"
-   }
+   },
+   "source": "page"
   },
   {
    "model": "IndicTrans2",
-   "en_xx": 48.6,
-   "xx_en": 62.8,
+   "en_xx": 46.39,
+   "xx_en": 62.48,
    "partial": false,
    "params": {
     "total_b": 1.1,
     "active_b": null,
     "kind": "variant",
-    "note": "The 1.1B variant; the model card does not say which variant was ranked (a distilled variant is about 0.3B)"
-   }
+    "note": "The 1.1B indictrans2-en-indic-1B and indictrans2-indic-en-1B models, run by us"
+   },
+   "source": "own"
   },
   {
    "model": "Indic Translate",
@@ -41,7 +46,8 @@
     "active_b": null,
     "kind": "card",
     "note": "Total parameters as stated on its own model card; built on Gemma 4 E4B"
-   }
+   },
+   "source": "page"
   },
   {
    "model": "gemini-3.5-flash",
@@ -53,7 +59,8 @@
     "active_b": null,
     "kind": "undisclosed",
     "note": "Google does not publish a parameter count"
-   }
+   },
+   "source": "page"
   },
   {
    "model": "translategemma-27b-it",
@@ -65,7 +72,8 @@
     "active_b": null,
     "kind": "nominal",
     "note": "Size from the model name; built on Gemma 3 27B"
-   }
+   },
+   "source": "page"
   },
   {
    "model": "gemma-4-31B-it",
@@ -77,7 +85,8 @@
     "active_b": null,
     "kind": "primary",
     "note": "Total parameters on the Hugging Face model card"
-   }
+   },
+   "source": "page"
   },
   {
    "model": "translategemma-12b-it",
@@ -89,7 +98,8 @@
     "active_b": null,
     "kind": "nominal",
     "note": "Size from the model name; built on Gemma 3 12B"
-   }
+   },
+   "source": "page"
   },
   {
    "model": "gemma-4-26B-a4b-it",
@@ -101,7 +111,8 @@
     "active_b": 3.8,
     "kind": "primary",
     "note": "Mixture of experts: 25.2B total, 3.8B active per token (model card)"
-   }
+   },
+   "source": "page"
   },
   {
    "model": "gemma-3-27b-it",
@@ -113,7 +124,8 @@
     "active_b": null,
     "kind": "primary",
     "note": "Gemma 3 technical report parameter table, including the vision encoder"
-   }
+   },
+   "source": "page"
   },
   {
    "model": "translategemma-4b-it",
@@ -125,7 +137,8 @@
     "active_b": null,
     "kind": "nominal",
     "note": "Size from the model name; built on Gemma 3 4B"
-   }
+   },
+   "source": "page"
   },
   {
    "model": "gemma-3-12b-it",
@@ -137,7 +150,8 @@
     "active_b": null,
     "kind": "primary",
     "note": "Gemma 3 technical report parameter table, including the vision encoder"
-   }
+   },
+   "source": "page"
   },
   {
    "model": "gemma-3-4b-it",
@@ -149,7 +163,8 @@
     "active_b": null,
     "kind": "primary",
     "note": "Gemma 3 technical report parameter table, including the vision encoder"
-   }
+   },
+   "source": "page"
   }
  ],
  "per_language": {
@@ -335,91 +350,91 @@
   },
   "IndicTrans2": {
    "as": [
-    47.1,
-    65.8
+    45.0,
+    65.1
    ],
    "bn": [
-    51.8,
-    63.2
+    47.6,
+    60.0
    ],
    "br": [
-    47.8,
-    62.1
+    46.2,
+    60.8
    ],
    "doi": [
-    57.8,
-    72.6
+    55.1,
+    72.0
    ],
    "gu": [
-    53.5,
-    66.5
+    52.9,
+    66.4
    ],
    "hi": [
-    56.7,
-    65.4
+    55.8,
+    64.5
    ],
    "kn": [
-    51.0,
-    64.2
+    48.5,
+    64.5
    ],
    "ks": [
-    40.2,
+    31.0,
     60.4
    ],
    "gom": [
-    45.2,
-    59.2
-   ],
-   "mai": [
-    48.7,
-    64.8
-   ],
-   "ml": [
-    50.9,
-    64.5
-   ],
-   "mni": [
-    44.6,
+    44.2,
     57.9
    ],
+   "mai": [
+    47.8,
+    65.9
+   ],
+   "ml": [
+    46.3,
+    64.0
+   ],
+   "mni": [
+    41.6,
+    59.9
+   ],
    "mr": [
-    51.0,
-    63.7
+    50.2,
+    64.7
    ],
    "ne": [
-    49.0,
-    67.7
+    48.2,
+    69.3
    ],
    "or": [
-    43.9,
-    66.2
+    41.4,
+    65.9
    ],
    "pa": [
-    50.6,
-    63.4
+    47.4,
+    59.7
    ],
    "sa": [
-    38.8,
-    54.8
+    35.7,
+    54.4
    ],
    "sat": [
-    33.4,
-    45.3
+    33.1,
+    47.6
    ],
    "sd": [
-    36.6,
-    57.3
+    35.2,
+    53.9
    ],
    "ta": [
-    49.5,
+    49.1,
     59.8
    ],
    "te": [
-    52.4,
-    64.8
+    51.6,
+    64.7
    ],
    "ur": [
-    68.2,
+    66.7,
     73.0
    ]
   }
