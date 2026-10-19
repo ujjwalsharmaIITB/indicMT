@@ -281,7 +281,7 @@ sbatch -p <partition> scripts/slurm/data_human_multilingual_dataset.sh      # Jo
 Follow the READMEs in order: `data/`, `mixing/`, `tokenizer/`, `training/`, `evaluation/`, `deployment/`.
 
 > [!TIP]
-> Training the full set of models takes days on 4 A100 GPUs, so most readers will want the released weights instead.
+> Training the release model takes about 110 A100 GPU-hours (see [Compute](#compute)), so most readers will want the released weights instead.
 
 ### Translate with the released model
 
@@ -297,6 +297,37 @@ curl -X POST localhost:8000/api/translate -H "Content-Type: application/json" \
 ```
 
 Open `http://localhost:8000/` for the web interface.
+
+## Compute
+
+GPU-hours are GPUs × wall-clock hours, from the cluster's job accounting. Training ran on 4 × A100 80 GB; evaluation and the LLM judge ran on A40 and L40 GPUs.
+
+**Release model only.** What it takes to reproduce the released model:
+
+| Stage | GPUs | GPU-hours |
+|---|---|---:|
+| Pre-training, combined data, to step 13,600 | 4 × A100 | 100 |
+| Fine-tuning on human data, to step 1,800 | 4 × A100 | 11 |
+| IN22-Gen and IN22-Conv evaluation of one checkpoint, 88 directions, OpenNMT-py | 2 × A40 | 0.5 |
+| chrF++ trajectory: the same evaluation for 63 checkpoints (54 pre-training up to step 13,600, 9 fine-tuning up to step 1,800) | 2 × A40 | 32 |
+| IN22-Gen and IN22-Conv evaluation, CTranslate2 float32 (reported scores) | CPU, 16 cores | 0 (about 1 hour) |
+| LLM judge, English→Indic | 2 × A40 | about 8 |
+| **Total** (the trajectory includes the single checkpoint) | | **about 150** |
+
+**Whole project.** Everything run for IndicMT, including models that were not released:
+
+| Work | GPU-hours |
+|---|---:|
+| Pre-training (human, mined and combined data) | 1,539 |
+| Deeper architectures (12+18 and 18+18 layers) | 715 |
+| IN22 evaluation of checkpoints | 473 |
+| Fine-tuning (with and without replay, deeper models) | 248 |
+| LLM judge | 135 |
+| Baseline runs (IndicTrans2, Indic Translate, Sarvam Translate) | 5 |
+| Setup and tests | 4 |
+| **Total** | **3,119** |
+
+By GPU type: 2,507 A100, 479 A40, 133 L40. Figures are as of 2026-10-19 and include jobs still running.
 
 ## Links
 
