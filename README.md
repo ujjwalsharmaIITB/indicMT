@@ -100,8 +100,8 @@ CTranslate2 model. chrF++, beam 5; latency is the median for one sentence on CPU
 |---|---:|---:|---:|---:|---:|---:|
 | OpenNMT-py checkpoint (`onmt_translate`) | 46.95 | 53.69 | 42.97 | 50.38 | | 2.4 GB |
 | **CTranslate2 float32 (reported)** | **47.15** | **53.87** | **43.15** | **50.59** | 399.2 ms | 630.4 MB |
-| CTranslate2 int16 | 47.15 | 53.86 | | | 367.1 ms | 323.2 MB |
-| CTranslate2 int8 (released) | 47.16 | 53.85 | | | 374.2 ms | 170.6 MB |
+| CTranslate2 int16 | 47.15 | 53.86 | 43.15 | 50.59 | 367.1 ms | 323.2 MB |
+| CTranslate2 int8 (released) | 47.16 | 53.85 | 43.14 | 50.59 | 374.2 ms | 170.6 MB |
 
 The checkpoint and the CTranslate2 float32 model have the same weights; their scores differ by about 0.2 chrF++
 because the two decoders differ. int16 and int8 are **not significantly different from float32** on IN22-Gen (paired

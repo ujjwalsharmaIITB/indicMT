@@ -284,8 +284,8 @@ results are from the CTranslate2 float32 conversion of the same checkpoint. chrF
 |---|---:|---:|---:|---:|---:|---:|
 | OpenNMT-py checkpoint (`indicMT.pt`) | 46.95 | 53.69 | 42.97 | 50.38 | | 2.4 GB |
 | **CTranslate2 float32 (reported)** | **47.15** | **53.87** | **43.15** | **50.59** | 399.2 ms | 630.4 MB |
-| CTranslate2 int16 | 47.15 | 53.86 | | | 367.1 ms | 323.2 MB |
-| CTranslate2 int8 (`indicMT/`) | 47.16 | 53.85 | | | 374.2 ms | 170.6 MB |
+| CTranslate2 int16 | 47.15 | 53.86 | 43.15 | 50.59 | 367.1 ms | 323.2 MB |
+| CTranslate2 int8 (`indicMT/`) | 47.16 | 53.85 | 43.14 | 50.59 | 374.2 ms | 170.6 MB |
 
 int16 and int8 are **not significantly different from float32** on IN22-Gen, and int8 is 3.7 times smaller.
 
