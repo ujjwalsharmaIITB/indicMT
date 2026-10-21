@@ -60,7 +60,9 @@ human data without replay (step 1,800). Macro average over the 22 languages, chr
   significantly ahead on en→xx on IN22-Gen (47.31 against 46.53, p = 0.001; 11 directions better, 8 worse at
   p < 0.05) and on IN22-Conv (43.23 against 42.60, p = 0.001; 8 better, 13 worse). IndicTrans2 is clearly ahead on xx→en (62.48 against 53.87 on IN22-Gen,
   55.63 against 50.59 on IN22-Conv) and has 1.1B parameters, 7.2 times more than IndicMT.
-- **LLM judge** (Gemma 4 31B-it, en→xx): evaluation in progress.
+- **LLM judge** (Gemma 4 31B-it, en→xx, IN22-Gen, 22,528 sentences): shown the human reference, the judge rates
+  **63.8%** of IndicMT translations perfect (5/5/5 on fluency, adequacy and overall; mean overall 4.33 of 5), against
+  70.3% (4.48) for IndicTrans2 1B. Without the reference: 66.9% (4.38) against 73.8% (4.52).
 
 ### Compared with other systems
 

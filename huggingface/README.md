@@ -275,6 +275,10 @@ significantly ahead on en→xx on IN22-Gen (47.31 against 46.53, p = 0.001; 11 d
 p < 0.05) and on IN22-Conv (43.23 against 42.60, p = 0.001; 8 better, 13 worse). IndicTrans2 is clearly ahead on xx→en (62.48 against 53.87 on IN22-Gen, 55.63
 against 50.59 on IN22-Conv) and has 7.2 times more parameters.
 
+An LLM judge (Gemma 4 31B-it) rated every IN22-Gen en→xx translation (22,528 sentences) for fluency, adequacy and
+overall quality on a 1–5 scale. Shown the human reference, it rates **63.8%** of IndicMT translations perfect (5/5/5;
+mean overall 4.33), against 70.3% (4.48) for IndicTrans2 1B. Without the reference: 66.9% (4.38) against 73.8% (4.52).
+
 <h3 id="quantization-and-the-files-in-this-repository" style="color:#A855F7">Quantization and the files in this repository</h3>
 
 This repository ships the OpenNMT-py checkpoint (`indicMT.pt`) and the int8 CTranslate2 model (`indicMT/`); the reported

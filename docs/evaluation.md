@@ -249,9 +249,9 @@ and are not tracked in git.
 
 ## 9. LLM-as-judge (Gemma 4 31B-it, en→xx)
 
-chrF++ and BLEU compare surface text. We also use a language model as a judge, on all **55,594** English-to-Indic
-sentences of IN22-Gen and IN22-Conv. The judge, Gemma 4 31B-it, scores **fluency**, **adequacy** (is the meaning
-there?) and **overall** from 1 to 5, at temperature 0 with seed 42. It runs in two variants:
+chrF++ and BLEU compare surface text. We also use a language model as a judge, on all **22,528** English-to-Indic
+sentences of IN22-Gen (22 directions × 1,024). The judge, Gemma 4 31B-it, scores **fluency**, **adequacy** (is the
+meaning there?) and **overall** from 1 to 5, at temperature 0 with seed 42. It runs in two variants:
 
 - **V2** (the headline) sees the human reference.
 - **V1** is reference-free. It is a control against rewarding mere overlap with the reference.
@@ -259,9 +259,26 @@ there?) and **overall** from 1 to 5, at temperature 0 with seed 42. It runs in t
 "Perfect" means fluency = adequacy = overall = 5. Protocol details:
 [`../evaluation/llm_judge/README.md`](../evaluation/llm_judge/README.md).
 
-**Results: being re-run.** The judge results published earlier were computed on translations produced with the old
-source encoding (section 2). They are withdrawn, and the judge is being re-run on the release model's corrected
-translations. This section will report the new numbers when that run finishes.
+**Results.** Three systems were judged on the same sentences: the release model through CTranslate2 float32 (the
+reported model), the same checkpoint through OpenNMT-py, and IndicTrans2 1B (our run, section 6). Means and
+percentages are over every scored item; items the judge failed to score (at most 5 of 22,528 per system and variant)
+are excluded. "Mean ≥ 4" is the share of items whose mean of the three scores is at least 4.
+
+| System | Variant | Perfect 5/5/5 | Mean ≥ 4 | Fluency | Adequacy | Overall |
+|---|---|---:|---:|---:|---:|---:|
+| **IndicMT, CTranslate2 float32** | V2 (reference) | **63.8%** | 77.0% | 4.62 | 4.48 | 4.33 |
+| IndicMT, OpenNMT-py | V2 (reference) | 61.7% | 74.7% | 4.57 | 4.41 | 4.27 |
+| IndicTrans2 1B | V2 (reference) | 70.3% | 83.0% | 4.65 | 4.64 | 4.48 |
+| **IndicMT, CTranslate2 float32** | V1 (no reference) | **66.9%** | 78.4% | 4.67 | 4.50 | 4.38 |
+| IndicMT, OpenNMT-py | V1 (no reference) | 65.2% | 76.3% | 4.63 | 4.44 | 4.33 |
+| IndicTrans2 1B | V1 (no reference) | 73.8% | 84.0% | 4.71 | 4.64 | 4.52 |
+
+The judge prefers IndicTrans2 on English→Indic by 6.5 (V2) and 6.9 (V1) points of perfect translations, although
+IndicMT is slightly ahead on chrF++ for the same sentences (section 6). The gap is mostly adequacy (4.48 against 4.64
+under V2); fluency is close (4.62 against 4.65). The CTranslate2 float32 model is ahead of the OpenNMT-py decoding of
+the same weights by 2.1 points (V2), consistent with its 0.2 chrF++ lead. The judge marks its own confidence as low for
+most items in Bodo, Dogri, Konkani, Maithili, Manipuri and Santali (by protocol a low-confidence item is never scored
+5), so the per-language scores for those languages should not be relied on; they lower all three systems alike. The judge results published before the source-encoding fix (section 2) are withdrawn.
 
 **Sanity checks of the judge itself.** A deliberately mismatched translation gets adequacy 1.00 (pass). The human
 reference itself, judged reference-free, gets overall 4.62 and a perfect 5/5/5 on about 79% of items. That is below
