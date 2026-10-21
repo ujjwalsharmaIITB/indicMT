@@ -80,11 +80,9 @@ def main():
             # _read_vocab_file) splits each line on generic whitespace
             # (`line.split(None, 1)`), not specifically on the tab this
             # script writes - a piece that is ITSELF a Unicode whitespace
-            # character collapses the split and crashes the reader. Confirmed
-            # exactly one such piece in this model (id 125565, the C1 control
-            # character U+0085 NEL) via a real onmt_train run - not a
-            # hypothetical, this crashed a smoke test before being excluded
-            # here. Skipping it: real text containing it (rare, likely noise
+            # character collapses the split and breaks the reader. This model has exactly
+            # one such piece (id 125565, the C1 control character U+0085 NEL).
+            # Skipping it: real text containing it (rare, likely noise
             # from the original tokenizer training corpus) falls back to
             # <unk> like any other genuinely out-of-vocabulary content -
             # acceptable, since a piece that can't even survive being

@@ -11,7 +11,7 @@ frontend. The explanation and all numbers are in [`../docs/deployment.md`](../do
 |---|---|
 | `convert_to_ct2.py` | Converts a checkpoint to CTranslate2 in three CPU-usable variants: `float32`, `int16`, `int8`. |
 | `ct2_eval.py` | Runs the full 44-direction IN22 evaluation (IN22-Gen by default, `--test-set in22-conv`) directly through CTranslate2 for one variant: chrF++, BLEU, latency and throughput. |
-| `ct2_infer.py` | The one shared inference path (tag and SentencePiece-encode with `data/common/tokenization.py`, `translate_batch`, decode), used by the API and as a command-line smoke test. `ct2_eval.py` uses the same encoding function. |
+| `ct2_infer.py` | The one shared inference path (tag and SentencePiece-encode with `data/common/tokenization.py`, `translate_batch`, decode), used by the API and as a command-line translator. `ct2_eval.py` uses the same encoding function. |
 | `stage_common.py` | Copies `data/common/languages.py` and `data/common/tokenization.py` into `deployment/api/common/` for the container build. |
 | `api/` | FastAPI app: `main.py`, `schemas.py`, the direct/pivot router `translator.py`, `languages.py`. |
 | `frontend/` | Plain HTML, CSS and JS, served by the same process. No build step. |
@@ -122,21 +122,21 @@ podman build -f deployment/Dockerfile -t indicmt-deploy:latest deployment/
 podman run -d -p 8000:8000 indicmt-deploy:latest
 ```
 
-**Status: not built yet.** On the development cluster, rootless `podman` cannot build any real image because the user has no
-`/etc/subuid` and `/etc/subgid` range, which rootless builds need to remap user IDs in base image layers. Three attempts
-(default `overlay`, `vfs`, `--userns=keep-id`) failed the same way. An administrator must add a range
-(`usermod --add-subuids ... --add-subgids ...`) and run `podman system migrate`. Then Job23
-(`scripts/slurm/deployment_podman_smoke.sh`) runs the staged check: a trivial build, the real build, a size report and a
-smoke run with real `curl` checks.
+Rootless `podman` needs a `/etc/subuid` and `/etc/subgid` range for the user to remap user IDs in base image layers. If
+builds fail with a user-namespace error, an administrator must add a range (`usermod --add-subuids ... --add-subgids ...`)
+and you then run `podman system migrate`. Docker works with the same commands.
 
-## 5. Stress test
+Job23 (`scripts/slurm/deployment_container_check.sh`) builds the image, reports its size, starts it and checks
+`/api/health` and `/api/translate` with `curl`.
+
+## 5. Load test
 
 ```bash
 sbatch -p <partition> scripts/slurm/deployment_stress_test.sh       # Job22
 ```
 
 Job22 starts the API, waits for `/api/health`, runs `stress_test.py` (by direction class, payload size and concurrency) and
-stops the server. **It has been written but not run yet.** No stress-test results are reported. The results file goes to
-`logs/stress_test_results.json`.
+stops the server. The results go to `logs/stress_test_results.json`. To test an API that is already running, call the
+script directly: `python deployment/stress_test.py --base-url http://<host>:8000 --output results.json`.
 
 Next: [`../docs/deployment.md`](../docs/deployment.md).

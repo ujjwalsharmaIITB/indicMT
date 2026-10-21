@@ -135,13 +135,12 @@ SRC: <en> यह अब बेसिक प्रोग्रामिंग भ
 TGT: It is now similar to the BASIC programming language.
 ```
 
-### A bug worth knowing about
+### Combining without loss
 
-An early version of this step combined the per-language datasets with a library function
-(`interleave_datasets`). Its default behaviour stops as soon as the *smallest* language runs out. That silently
-discarded most of every larger language's data, with no error. We found it because bidirectional expansion should
-exactly double the row count, and the output was smaller than the input. The step now uses
-`concatenate_datasets`, and both an assertion in the script and an automated test check the row count.
+The per-language datasets are combined with `concatenate_datasets`, not `interleave_datasets`. The latter's default
+behaviour stops as soon as the *smallest* language runs out, which would silently discard most of every larger
+language's data. Bidirectional expansion must exactly double the row count; an assertion in the script and an
+automated test check this.
 
 ## 6. Running at scale: job scripts and array jobs
 

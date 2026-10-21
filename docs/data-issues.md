@@ -5,7 +5,7 @@ be reported to the BPCC maintainers.
 
 ## 1. Santali: `tgt_lang` says `sat_Beng`, but the text is Ol Chiki
 
-**Status:** confirmed. Worked around locally. Not yet reported upstream.
+**Status:** confirmed. Worked around in this pipeline (see below).
 
 ### Summary
 

@@ -22,11 +22,9 @@ Five datasets, each becoming one raw src/tgt file pair under
   These are multi-parallel (one row = the same sentence in all 23 languages) -
   kept that way in the output rather than pre-flattened into src/tgt pairs, so
   any of the 44 directions can be scored later by pairing two of the 23
-  per-language files at the same line index (an earlier version of this
-  script pre-expanded to 44 directional src/tgt pairs; corrected - a
-  pre-flattened file can't be re-sliced back into per-direction references
-  for chrF++/BLEU without re-deriving which lines belong to which direction,
-  which the multi-parallel form gives for free). Written as **23 line-aligned
+  per-language files at the same line index (a pre-flattened file of
+  44 directional src/tgt pairs could not be re-sliced into per-direction
+  references without re-deriving which lines belong to which direction). Written as **23 line-aligned
   per-language files** under `128k-spm/data/raw/test/{in22-gen,in22-conv}/`:
   `in22-gen.<short-tag>` (e.g. `in22-gen.en`, `in22-gen.hi`, ... - short tag =
   the language's `<xx>` tag with the brackets stripped), one text file per

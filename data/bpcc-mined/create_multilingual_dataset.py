@@ -13,13 +13,11 @@ Quality gates, applied before bidirectional expansion:
    corpora. Mismatched rows are dropped, not corrected.
 2. **Exact-duplicate removal** on the (src, tgt) pair, applied globally across
    all raw files (a pair can recur across bpcc-mined's different configs,
-   e.g. the same sentence pair in both `comparable` and `nllb-filtered`) -
-   this was previously only implemented for bpcc-human (in create_splits.py)
-   despite docs/paper.md describing it as applying to all data; this script
-   now actually does it for bpcc-mined too.
+   e.g. the same sentence pair in both `comparable` and `nllb-filtered`), matching
+   the deduplication bpcc-human gets in create_splits.py.
 
 Performance note: bpcc-mined is two orders of magnitude larger than
-bpcc-human (~106M raw rows at time of writing, vs. ~3.4M) - large enough that
+bpcc-human (~106M raw rows vs. ~3.4M) - large enough that
 the per-row script-consistency check (a Python-level character scan) matters.
 Loading + filtering is parallelized per-file with ProcessPoolExecutor (files
 are independent and vary widely in size, so this is the natural, easy

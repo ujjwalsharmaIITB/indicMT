@@ -24,13 +24,13 @@ The rule, per language (`tokenizer/prepare_corpus.py`):
   bpcc-mined data up to **1,000,000 sentences**. Gold data is never left out to make room for mined data.
 - **English:** the same rule with a cap of **3,000,000** sentences.
 
-### A bug this caught
+### Why English also gets mined data
 
-An early version assumed English's raw human data (about 3.43M rows) already exceeded the 3M cap, so it skipped the
-mined top-up for English. That was wrong. The 3.43M figure is not deduplicated. One human config, `ilci`, is
+English's raw human data (about 3.43M rows) looks as if it already exceeds the 3M cap, but that figure is not
+deduplicated. One human config, `ilci`, is
 *multi-parallel*: the same English sentence is translated into many Indic languages, so it repeats in the raw count.
-After deduplication there are only about **305,000** unique English sentences. English needed the same mined top-up
-as every Indic language, and it now gets it (using reservoir sampling, so memory stays small).
+After deduplication there are only about **305,000** unique English sentences. English needs the same mined top-up
+as every Indic language, and gets it (using reservoir sampling, so memory stays small).
 
 The lesson: always deduplicate before counting. A raw row count and a unique-item count can differ by a factor of ten
 on multi-parallel data, and only one of them is the right number to compare with a cap.
@@ -130,8 +130,8 @@ code, ours covers 23, so low fertility bought with four times the table is not t
 splits its vocabulary across two models, so we compare against its 160k total. And byte-fallback tokenizers never
 produce `<unk>`, so a low unknown rate does not mean good coverage. Fertility stays meaningful across all of them.
 
-A reduced-scale translation check of the vocabulary choice (training small models at the two candidate sizes) was
-planned. It was not run.
+The vocabulary size was chosen from these intrinsic measures. It was not validated by training translation models at
+each candidate size.
 
 ## Files and outputs
 

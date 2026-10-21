@@ -1,13 +1,13 @@
 """Download the bpcc-human (gold, human-translated) configs of ai4bharat/BPCC.
 
-Fixes vs. the original draft:
-- Output filename now includes the config name (`{lang}_{config}_bpcc_human.jsonl`),
-  so bpcc-seed-latest and ilci no longer silently overwrite each other for languages
-  present in both.
+Details:
+- Output filenames include the config name (`{lang}_{config}_bpcc_human.jsonl`),
+  so bpcc-seed-latest and ilci do not overwrite each other for languages present
+  in both.
 - Paths resolved relative to this file, not the caller's cwd.
 - Explicit HF auth via data/common/auth.py, with a clear error if no token is found
   (ai4bharat/BPCC is gated).
-- Destructive directory wipe is now opt-in (--fresh) instead of unconditional; by
+- Wiping the output directory is opt-in (--fresh); by
   default, already-downloaded (lang, config) files are skipped so a failed run can
   be resumed without re-downloading everything.
 - load_dataset() is retried with backoff on transient errors instead of aborting

@@ -21,8 +21,8 @@ Four outputs, all under tokenizer/corpus/ (gitignored - generated, not source):
 
 ## Why the SPM corpus includes mined data, capped per-language
 
-An earlier version of this script built the SPM training corpus from
-bpcc-human only. That's a real mismatch: the actual OpenNMT training data
+Building the SPM training corpus from bpcc-human only would be a mismatch:
+the actual OpenNMT training data
 (mixing/output/) is dominated by bpcc-mined (~210M rows vs. bpcc-human's
 ~6.9M, a >30x difference) - a tokenizer that never saw mined-style text
 during its own training would be miscalibrated (worse fertility, more
@@ -55,7 +55,7 @@ those raw files are still organized per-language - for the 22 Indic
 languages, scanning only that language's own 1-3 files is far cheaper than
 scanning the full 76GB flattened/shuffled file. Four Indic languages (Dogri,
 Manipuri, Santali, Sindhi) get no mined top-up at all - bpcc-mined has zero
-rows for them, confirmed separately in docs/data-pipeline.md.
+rows for them, confirmed separately in docs/data.md.
 
 Intended to run as a Slurm CPU job (see
 scripts/slurm/tokenizer_prepare_corpus.sh), not on the login node.

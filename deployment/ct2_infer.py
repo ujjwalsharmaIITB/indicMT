@@ -1,6 +1,6 @@
 """Shared CTranslate2 inference module - the one code path for tag + SPM-encode ->
 translate_batch -> SPM-decode, used three ways so it never
-drifts into three near-duplicate implementations: as a CLI smoke-test tool
+drifts into three near-duplicate implementations: as a command-line tool
 (this file, run directly), imported by deployment/ct2_eval.py (the
 quantization/quality sweep), and imported by deployment/api/translator.py
 (the live API).

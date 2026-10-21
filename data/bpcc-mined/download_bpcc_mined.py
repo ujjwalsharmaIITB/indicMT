@@ -1,10 +1,7 @@
 """Download the bpcc-mined (synthetic/mined) configs of ai4bharat/BPCC.
 
-Same class of fixes as data/bpcc-human/download_bpcc_human.py (path robustness,
-explicit HF auth, resumable/opt-in-destructive downloads, retry with backoff).
-This downloader's output filenames already included the config name in the
-original draft, so no overwrite bug existed here, but everything else was
-fixed identically to its bpcc-human counterpart for consistency.
+Works like data/bpcc-human/download_bpcc_human.py (paths relative to this file,
+explicit HF auth, resumable downloads with opt-in --fresh, retry with backoff).
 
 Per the data pipeline's design (docs/data.md): the public
 ai4bharat/BPCC dataset exposes no

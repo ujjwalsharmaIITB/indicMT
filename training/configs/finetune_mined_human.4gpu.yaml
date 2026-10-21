@@ -72,14 +72,12 @@ save_checkpoint_steps: 200
 world_size: 4
 gpu_ranks: [0, 1, 2, 3]
 master_port: 12360
-# timeout raised from 300s (5min) to 1800s (30min) after this exact config
-# died to a 300s NCCL ALLREDUCE watchdog timeout (Rank 3) after ~3.5h of
-# training - see pretrain_human.2gpu.yaml's header for the full incident
-# writeup (the same failure independently hit the human-2gpu arm too).
+# 1800 s NCCL timeout (instead of 300 s) avoids spurious ALLREDUCE watchdog
+# timeouts on long runs; see pretrain_human.2gpu.yaml.
 timeout: 1800
 
 # Batching - identical OOM-safe values as both single-source arms (see
-# pretrain_human.2gpu.yaml's header for the full incident writeup).
+# pretrain_human.2gpu.yaml's header).
 bucket_size: 262144
 num_workers: 0  # same precaution as both single-source arms
 batch_type: "tokens"

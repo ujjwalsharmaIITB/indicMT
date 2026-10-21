@@ -43,8 +43,7 @@
 # pretrain_mined.4gpu.yaml (12+12 layers, 16 heads, d_model=512, d_ff=2048,
 # 153,807,872 params, 128k shared vocab, OOM-safe batching) - must be
 # identical for the data-ablation comparison to isolate the data variable
-# only. See pretrain_human.2gpu.yaml's header for the full verification/incident
-# history this inherits.
+# only. See pretrain_human.2gpu.yaml's header for the notes this inherits.
 
 ## Where onmt_train's own working files go
 save_data: 128k-spm/opennmt/bpcc-combined-12e18d/data
@@ -124,14 +123,12 @@ save_checkpoint_steps: 1000
 world_size: 4
 gpu_ranks: [0, 1, 2, 3]
 master_port: 12364
-# timeout raised from 300s (5min) to 1800s (30min) after this exact config
-# died to a 300s NCCL ALLREDUCE watchdog timeout (Rank 3) after ~3.5h of
-# training - see pretrain_human.2gpu.yaml's header for the full incident
-# writeup (the same failure independently hit the human-2gpu arm too).
+# 1800 s NCCL timeout (instead of 300 s) avoids spurious ALLREDUCE watchdog
+# timeouts on long runs; see pretrain_human.2gpu.yaml.
 timeout: 1800
 
 # Batching - identical OOM-safe values as both single-source arms (see
-# pretrain_human.2gpu.yaml's header for the full incident writeup).
+# pretrain_human.2gpu.yaml's header).
 bucket_size: 262144
 num_workers: 0  # same precaution as both single-source arms
 batch_type: "tokens"

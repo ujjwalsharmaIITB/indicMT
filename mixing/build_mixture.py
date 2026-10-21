@@ -140,15 +140,8 @@ def iter_lines_in_range(path, start, end):
     `end` boundary). But when `start` happens to land EXACTLY at a line
     boundary (the byte right before it is '\\n', or start==0), there is no
     partial line to skip - the previous chunk's last full line ended exactly
-    at `start`. Unconditionally skipping a line in that case silently drops
-    one real line per such boundary - confirmed as a real, reproducible bug
-    (not hypothetical): on a 213.8M-line/~21GB file split into 32 chunks, one
-    of the 31 internal boundaries happened to land exactly on a line break,
-    and the old unconditional-skip version dropped that line - a
-    single-file line-count check wouldn't have caught it by luck alone here,
-    but a cross-file alignment check did (two independently-chunked files of
-    different byte sizes hit this edge case at different, uncorrelated
-    boundaries, desyncing their line counts by one from that point on)."""
+    at `start`, so skipping a line there would drop a real line and break the
+    alignment between files chunked at different byte offsets."""
     with open(path, "rb") as f:
         if start != 0:
             f.seek(start - 1)
@@ -168,15 +161,11 @@ def iter_lines_in_range(path, start, end):
 def read_shard_with_retry(path: Path, retries=6, base_delay=0.5) -> str:
     """Read a shard file's full content, retrying on FileNotFoundError/OSError.
 
-    Real, observed failure mode on a shared network filesystem: with many
-    worker processes writing shard files and the main process then reading
-    and unlinking them right after, the main process occasionally sees a
-    file as not-yet-existing (or gets a stale-handle error on read/unlink)
-    for a shard that the writer process already finished and closed -
-    metadata-cache staleness under heavy concurrent I/O, not a logic bug
-    (confirmed: the "missing" shard file was present on disk seconds later,
-    unchanged). Retries with exponential backoff rather than failing a
-    multi-hour job over a transient race. Shared by every script that does
+    On a shared network filesystem, with many worker processes writing shard
+    files and the main process reading and unlinking them right after, the
+    main process can briefly see a finished shard as missing (or get a
+    stale-handle error) because of metadata caching. Retries with exponential
+    backoff rather than failing a multi-hour job over a transient race. Shared by every script that does
     this chunk-then-concat pattern (this module and training/*.py)."""
     for attempt in range(retries):
         try:
@@ -249,7 +238,7 @@ def main():
     input_path = cfg["input"]
     indic_only = cfg["indic_only"]
     if not input_path.exists():
-        raise SystemExit(f"{input_path} does not exist - build it first (see docs/data-pipeline.md).")
+        raise SystemExit(f"{input_path} does not exist - build it first (see data/README.md).")
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     chunks = byte_chunks(input_path, args.workers)

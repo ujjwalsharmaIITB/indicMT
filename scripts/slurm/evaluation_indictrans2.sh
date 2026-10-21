@@ -14,8 +14,8 @@
 # (indictrans2-en-indic-1B), GPU 1 runs xx->en (indictrans2-indic-en-1B), then both are merged
 # into scores.json and report.md in evaluation/results/indictrans2-1B/.
 # Usage: sbatch -p <partition> scripts/slurm/evaluation_indictrans2.sh [extra run_eval_indictrans2.py args]
-#   e.g. smoke test: sbatch scripts/slurm/evaluation_indictrans2.sh --test-sets in22-gen \
-#          --directions en-hi hi-en --output-dir evaluation/results/indictrans2-1B-smoke
+#   e.g. two directions only: sbatch scripts/slurm/evaluation_indictrans2.sh --test-sets in22-gen \
+#          --directions en-hi hi-en --output-dir evaluation/results/indictrans2-1B-en-hi
 #
 # Needs its own environment (see the docstring of evaluation/run_eval_indictrans2.py): the
 # project's python and torch plus transformers 4.46.3 and IndicTransToolkit 1.1.1, kept apart from

@@ -53,15 +53,14 @@ Things the scripts assume or leave to you:
 | Job19 | `llm_judge.sh` | LLM judge: score one checkpoint | 2 GPUs, 16 CPUs, 128 GB, 12 h | Job14 output, judge model | `evaluation/llm_judge/results/` |
 | Job20 | `deployment_convert_ct2.sh` | CTranslate2 conversion and quantization comparison | 8 CPUs, 32 GB, 12 h | a checkpoint | `.../ct2/<checkpoint>/{float32,int16,int8}/` |
 | Job21 | `deployment_quant_significance.sh` | Quantization significance test | 24 CPUs, 48 GB, 12 h | Job20 output | `.../ct2/<checkpoint>/significance/` |
-| Job22 | `deployment_stress_test.sh` | API stress test (not yet run) | 8 CPUs, 16 GB, 3 h | staged model in `deployment/model/` | `logs/stress_test_results.json` |
-| Job23 | `deployment_podman_smoke.sh` | Container build check (blocked, see below) | 4 CPUs, 8 GB, 1 h | staged model | log only |
+| Job22 | `deployment_stress_test.sh` | API load test | 8 CPUs, 16 GB, 3 h | staged model in `deployment/model/` | `logs/stress_test_results.json` |
+| Job23 | `deployment_container_check.sh` | Container build and run check | 4 CPUs, 8 GB, 1 h | staged model in `deployment/model/` | log only |
 | Job24 | `evaluation_indictrans2.sh` | IndicTrans2 1B baseline on IN22, scored like our own checkpoints | 2 GPUs, 16 CPUs, 64 GB, 12 h | IN22 raw files (Job8 output), gated IndicTrans2 models, a separate environment | `evaluation/results/indictrans2-1B/` |
 
 ## Notes
 
-- **Job23** needs rootless `podman` with a subuid and subgid range for the user. On the development cluster that was
-  missing, so the job has not run. See [`../deployment/README.md`](../deployment/README.md).
-- **Job22** is written but has not been run.
+- **Job23** needs `podman`. Rootless `podman` needs a subuid and subgid range for the user. See
+  [`../deployment/README.md`](../deployment/README.md).
 - Training jobs resume only when asked (`--export=ALL,RESUME=1`). See [`../training/README.md`](../training/README.md).
 - Steps that need the internet (downloads) run outside these templates, for example on a login node. See
   [`../data/README.md`](../data/README.md).

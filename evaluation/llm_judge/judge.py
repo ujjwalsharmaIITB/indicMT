@@ -34,7 +34,7 @@ resumed run picks them up again. Failed items are never imputed and never enter 
 Examples:
   python evaluation/llm_judge/judge.py --backend vllm --model /path/to/gemma-4-31B-it --arm bpcc-human --step 11400
   python evaluation/llm_judge/judge.py --backend echo --arm bpcc-human --step 11400 --limit-per-direction 5 \\
-      --out-dir /tmp/judge_smoke
+      --out-dir evaluation/llm_judge/results/echo-test
   python evaluation/llm_judge/judge.py --backend echo --arm bpcc-human --step 11400 --sanity
 """
 

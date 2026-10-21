@@ -1,13 +1,12 @@
 """Generate dataset_statistics.md covering bpcc-human (raw + splits) and
-bpcc-mined (raw). Moved here from an earlier script and extended to
-also cover bpcc-mined (see docs/data-pipeline.md).
+bpcc-mined (raw) (see docs/data.md).
 
-Fixes vs. the original draft:
-- Paths resolved relative to this file, not the caller's cwd.
+Details:
+- Paths are resolved relative to this file, not the caller's cwd.
 - A section whose directory doesn't exist yet (e.g. bpcc-mined/raw before it's
   been downloaded) is skipped with a note in the report instead of crashing
   the whole run with FileNotFoundError.
-- Malformed/incomplete JSONL lines are now caught and counted per file instead
+- Malformed/incomplete JSONL lines are caught and counted per file instead
   of aborting the entire report on the first bad line.
 """
 

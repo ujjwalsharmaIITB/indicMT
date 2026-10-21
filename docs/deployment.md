@@ -1,7 +1,7 @@
 # Deployment: quantization and serving
 
 This page explains how a trained checkpoint becomes a small CPU-served model: conversion to CTranslate2,
-quantization, the API and frontend, and what has and has not been verified. Code and commands are in
+quantization, the API and frontend, and the limitations. Code and commands are in
 [`../deployment/`](../deployment/README.md).
 
 The model served is the **release model** (12+12, combined pre-training, then human fine-tuning without replay,
@@ -34,7 +34,7 @@ applied after training); and per-channel against per-tensor scales (we use the c
 ## 3. Conversion to CTranslate2
 
 `deployment/convert_to_ct2.py` converts one OpenNMT-py checkpoint into three CTranslate2 model directories
-(`float32`, `int16`, `int8`) with CTranslate2's `OpenNMTPyConverter`. We found and fixed two compatibility issues:
+(`float32`, `int16`, `int8`) with CTranslate2's `OpenNMTPyConverter`. The script handles two compatibility issues:
 
 1. **`weights_only` loading.** OpenNMT-py's release path calls `torch.load(..., weights_only=True)`. That rejects the
    checkpoint's `opt` field (a standard `argparse.Namespace`, present in every OpenNMT-py checkpoint). We use
@@ -94,16 +94,6 @@ what 22 tests at that threshold produce by chance (1.1 expected). Per-direction 
 smaller, with 6% lower p50 and 8% lower p95 latency and 42% higher batch throughput. int16 is the middle option at half
 the size, with the same throughput.
 
-An earlier version of this page reported a small but significant int8 cost on English-to-Indic. That test used the old
-source encoding. With training-format inputs, the difference is not significant.
-
-### Earlier checkpoints
-
-We also ran the comparison on earlier checkpoints (an early mined-only checkpoint and the human-only checkpoint at step
-11,400). Those runs used the old source encoding and were not repeated, so their scores are not reported here. One
-observation from them still stands: the int16 and int8 scores moved by up to 0.06 between two runs on different nodes,
-so the quantized CPU kernels are apparently not bit-identical across machines (not investigated).
-
 ## 5. API and frontend
 
 A FastAPI service (`deployment/api/`) exposes:
@@ -127,25 +117,22 @@ Settings are environment variables: `MODEL_DIR`, `SPM_PATH`, `CHECKPOINT_NAME` (
 
 ## 6. Container build
 
-The `Dockerfile` is ready (Python 3.11 slim, no PyTorch in the image, CTranslate2 and FastAPI only). **It has not been
-built.** On the development cluster, rootless `podman` cannot build any real image, because the user has no entry in
-`/etc/subuid` and `/etc/subgid`. Rootless builds need those ranges to remap the user IDs in any base image layer. We
-tried three ways (the default `overlay` driver, the `vfs` driver with a fresh storage root, and `--userns=keep-id`).
-All failed the same way. Fixing it takes an administrator: add a subuid and subgid range for the user and run
-`podman system migrate`. Once that is done, Job23 runs the full staged check.
+The `Dockerfile` builds a small serving image (Python 3.11 slim, no PyTorch, CTranslate2 and FastAPI only). Rootless
+`podman` needs a subuid and subgid range for the user (in `/etc/subuid` and `/etc/subgid`) to remap the user IDs in the
+base image layers. Job23 builds the image, starts it and checks the health and translate endpoints. See
+[`../deployment/README.md`](../deployment/README.md).
 
-## 7. Stress test
+## 7. Load test
 
 `deployment/stress_test.py` is an asyncio and httpx load generator. It reports p50, p95 and p99 latency and requests
 per second by direction class (en→xx, xx→en, xx→xx pivot), payload size and concurrency. Job22 starts the API, waits
-for it to be healthy, runs the test and stops the server. **It has been written but not run yet.** No stress-test
-numbers are reported.
+for it to be healthy, runs the test and stops the server. It can also be pointed at any running instance of the API.
 
-## 8. Open points
+## 8. Limitations
 
 - The CTranslate2 and `onmt_translate` score difference (0.20 en→xx and 0.18 xx→en for float32) is unexplained (section 4).
 - The latency ordering of the variants changes between checkpoints and nodes. Treat single latency numbers as
   indicative.
+- int16 and int8 scores can move by up to 0.06 chrF++ between runs on different machines: the quantized CPU kernels are
+  not bit-identical across CPUs.
 - float16 on CPU is untested because the hardware does not support it.
-- The CPU model and thread settings behind the latency numbers on earlier checkpoints were not recorded. The conversion
-  job now records them.

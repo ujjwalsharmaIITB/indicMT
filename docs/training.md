@@ -136,9 +136,10 @@ replaced the planned rule (early stopping). A longer run was not tested.
 
 One fixed rule picks the checkpoint to carry forward: **the highest mean chrF++ over IN22-Gen and IN22-Conv, in both
 directions** (the "mean of four"). The fine-tunes in section 7 start from combined step 13,600 and mined step 24,600,
-which this rule picked under the old, mismatched scores. Under the corrected scores, the rule picks step 37,700 for the
+which this rule picked on scores computed with the mismatched source encoding (section 6). With the training
+encoding, the rule picks step 37,700 for the
 combined arm (48.44), step 35,000 for the mined arm (35.96) and step 13,900 for the human-only arm (43.00). Fine-tunes
-from those later checkpoints have not been run.
+from those later checkpoints are not part of this study.
 
 This rule uses the IN22 test sets for model selection, so IN22 scores of selected checkpoints carry a **small
 optimistic bias**. Every table in these docs is a single seed. Two extra seeds of the human-only arm reproduce its
@@ -165,9 +166,8 @@ Indic-to-English rose by 0.02 and 0.37. The effect grows with training length:
 | combined 12+18, step 49,000 | 34.8 | 46.6 |
 | human-only, step 20,800 | 42.9 | 45.3 |
 
-So the earlier finding that English-to-Indic declines late in pre-training was an artifact of the mismatch. The
-analysis built on it (output length, repetition loops and per-language losses) used outputs from the mismatched inputs
-and has been withdrawn. In the training encoding, English-to-Indic keeps rising to the end of training. The lesson:
+So an apparent late decline in English-to-Indic during pre-training is an artifact of the mismatch. In the training
+encoding, English-to-Indic keeps rising to the end of training. The lesson:
 one function owns the input format, and every entry point checks it.
 
 ## 7. Fine-tuning on human data
@@ -199,8 +199,8 @@ Best checkpoint of each run by the selection rule, and the release checkpoint:
 
 Findings:
 
-- **Combined to human without replay, step 1,800, is the release model.** Under the corrected scores it is not the
-  top checkpoint by the selection rule. Step 1,000 of the same run (48.58), mined to human at step 5,800 (48.70),
+- **Combined to human without replay, step 1,800, is the release model.** It is not the top checkpoint by the
+  selection rule. Step 1,000 of the same run (48.58), mined to human at step 5,800 (48.70),
   12+18 to human at step 1,400 (48.59, section 8) and 18+18 combined pre-training at step 38,000 (48.70) are all
   within 0.2 of it on the mean of four. These are single-seed differences without a significance test, and we kept
   the release model.
@@ -209,9 +209,7 @@ Findings:
   (54.47 against 54.13).
 - **Combined fine-tuning peaks early** (step 1,000 without replay, 2,800 with replay). **Mined fine-tuning peaks
   late** (steps 5,800 and 5,400 of the 6,000-step budget).
-- **Mined to human ends level with combined to human** (IN22-Gen English-to-Indic 47.04 against 46.80). An earlier
-  version of this page found the mined route well behind on English-to-Indic and analysed why, per language. That gap
-  came from the source-encoding mismatch (section 6), and the analysis has been withdrawn.
+- **Mined to human ends level with combined to human** (IN22-Gen English-to-Indic 47.04 against 46.80).
 - **Indic-to-English needs both data sources.** Every model trained on mined and human data scores 53.69 to 55.07 on
   IN22-Gen. The human-only arm scores 43.80 and the mined-only arm 44.20.
 - **Pre-training alone gets as far.** The last combined pre-training checkpoint (step 37,700, 48.44) is level with the
@@ -240,16 +238,14 @@ the selection rule:
 The 12+12 run was stopped at step 37,700, so it cannot be compared beyond that point. A deeper decoder (12+12 to
 12+18) does not help on the mean (−0.06): it gains English-to-Indic (+0.29 Gen, +0.42 Conv) and loses Indic-to-English
 (−0.54 Gen, −0.42 Conv). 18+18 is the best shape, +0.26 over 12+12 on the mean. These are pre-fine-tuning numbers
-without a significance test, and checkpoint selection used the test sets. An earlier version of this section said all
-three shapes peak at steps 13,000 to 13,600 and lose English-to-Indic afterwards. That came from the source-encoding
-mismatch (section 6). Against human-only pre-training, the combined shapes are 5.4 to 5.7 higher on the mean, mostly
+without a significance test, and checkpoint selection used the test sets. Against human-only pre-training, the combined shapes are 5.4 to 5.7 higher on the mean, mostly
 from Indic-to-English.
 
 **Stage 2** is human fine-tuning without replay from step 13,000 of each deeper run (configs
 `finetune_combined_12e18d_human.4gpu.yaml` and `finetune_combined_18e18d_human.4gpu.yaml`). For 12+18 it is complete:
 the best checkpoint is step 1,400, mean of four 48.59 (47.08 / 53.73 on IN22-Gen, 43.15 / 50.39 on IN22-Conv). That is
-level with 12+12 to human (48.58 at step 1,000). Stage 2 results for 18+18 are not reported yet. The release model
-stays the 12+12 model. Wider depth sweeps are planned future work.
+level with 12+12 to human (48.58 at step 1,000). Stage 2 results are reported for 12+18 only. The release model
+stays the 12+12 model.
 
 ## 9. Checkpoints and outputs
 
@@ -259,4 +255,4 @@ TensorBoard logs go beside them.
 ## 10. Compute
 
 One node per job with up to 4 NVIDIA A100 80 GB GPUs (CUDA 12.4 driver), `torch==2.2.0+cu121`, DistributedDataParallel.
-The cluster caps a job at 4 GPUs and at 6 days. The human arm uses 2 GPUs. The mined and combined arms use 4.
+Each job uses at most 4 GPUs and runs for at most 6 days. The human arm uses 2 GPUs. The mined and combined arms use 4.

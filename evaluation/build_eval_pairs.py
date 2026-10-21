@@ -16,10 +16,8 @@ Each source line is built exactly as the training and dev sources were: the raw
 sentence with the tag in front, "<xx> raw sentence", encoded by SentencePiece in
 one call (data/common/tokenization.py). With add_dummy_prefix (the SentencePiece
 default) and "<xx>" a user-defined piece, this yields ['▁', '<xx>', '▁word', ...]:
-a lone "▁" first, then the tag, as in every training and dev source line. An
-earlier version of this script prepended "<xx>" to the already-encoded sentence,
-which drops that leading "▁"; re-run this script if your eval files were built
-with it.
+a lone "▁" first, then the tag, as in every training and dev source line. Prepending "<xx>" to an already-encoded
+sentence would drop that leading "▁" and no longer match training.
 
 Output: 128k-spm/data/eval/{test-set}/{test-set}.128k.spm.{src}-{tgt}.src
 (gitignored - already covered by .gitignore's `[0-9]*[a-z]*-spm/data/`

@@ -26,8 +26,7 @@ pipeline's own 128k-spm/opennmt/ tree - 128k-spm/opennmt/<arm>/checkpoints/model
 evaluates into evaluation/results/<arm>/model_step_N/ (override with
 --output-dir; a checkpoint path that isn't under a checkpoints/ folder falls
 back to evaluation/results/<run-name>/, no arm subfolder - nothing to derive
-one from). Deliberately NOT beside the checkpoint itself (an earlier version
-of this script did that) - a single evaluation/results/ home is more
+one from). Deliberately NOT beside the checkpoint itself - a single evaluation/results/ home is more
 discoverable for anyone who wants to see how models perform without needing
 to know the training-pipeline layout, and it never duplicates or symlinks
 the (large) checkpoint files themselves, only the evaluation artifacts they
@@ -206,21 +205,12 @@ def main():
     ap.add_argument("--test-sets", nargs="+", default=DEFAULT_TEST_SETS, choices=DEFAULT_TEST_SETS)
     ap.add_argument("--beam-size", type=int, default=5)
     ap.add_argument("--batch-size", type=int, default=1024,
-                     help="tokens per batch (onmt_translate -batch_size). "
-                          "**Real incident, not a theoretical caveat**: 4096 was tried first "
-                          "(measured ~4.5GB on a single en->hi test run) and used to pack 6 "
-                          "concurrent evaluations per GPU - two separate batch jobs then hit "
-                          "real CUDA OOM crashes, with individual processes observed spiking to "
-                          "15.96/17.89/19.77 GiB (nvidia-smi, from the actual crash messages), "
-                          "far beyond the single-direction test run. Root cause: batch_size is in "
-                          "TOKENS, but onmt/translate/decode_strategy.py's tile() (replicating "
-                          "encoder state across the beam dimension at the start of decoding) "
-                          "scales with SENTENCE COUNT in the batch x beam_size - a fixed token "
-                          "budget packs far more sentences for short-sentence directions, so "
-                          "peak memory varies hugely by direction, not just by batch_size. "
-                          "Reverted to a more conservative 1024 with reduced concurrent packing "
-                          "(see scripts/slurm/evaluation_batch_run.sh) until a real, multi-direction "
-                          "(not single-direction) memory profile justifies going higher again.")
+                     help="tokens per batch (onmt_translate -batch_size). batch_size counts "
+                          "tokens, but beam search replicates encoder state per sentence x "
+                          "beam_size, so a fixed token budget packs many more sentences for "
+                          "short-sentence directions and peak GPU memory varies strongly by "
+                          "direction. 4096 can exceed 16-20 GiB per process; 1024 is a safe "
+                          "default when several evaluations share a GPU.")
     ap.add_argument("--gpu", type=int, default=0)
     ap.add_argument("--output-dir", default=None,
                      help="default: evaluation/results/<arm>/<checkpoint-stem>/, e.g. a "

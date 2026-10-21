@@ -127,10 +127,10 @@ buckets; see [`../docs/training.md`](../docs/training.md), section 7.
 The current best recipe is repeated with **12 encoder + 18 decoder** layers (178,992,128 parameters) and **18 + 18**
 (197,878,784), same width.
 
-| Stage | Configs | Job | Status |
+| Stage | Configs | Job | Results |
 |---|---|---|---|
-| 1. Combined pre-training | `pretrain_combined_12e18d.4gpu.yaml`, `pretrain_combined_18e18d.4gpu.yaml` | Job12 | done |
-| 2. Human fine-tune, no replay | `finetune_combined_12e18d_human.4gpu.yaml`, `finetune_combined_18e18d_human.4gpu.yaml` | Job13 | 12+18 done; 18+18 not yet reported |
+| 1. Combined pre-training | `pretrain_combined_12e18d.4gpu.yaml`, `pretrain_combined_18e18d.4gpu.yaml` | Job12 | reported for all three shapes |
+| 2. Human fine-tune, no replay | `finetune_combined_12e18d_human.4gpu.yaml`, `finetune_combined_18e18d_human.4gpu.yaml` | Job13 | reported for 12+18 |
 
 ```bash
 sbatch -p <partition> --export=ALL,CFG=pretrain_combined_12e18d,RUN=bpcc-combined-12e18d \

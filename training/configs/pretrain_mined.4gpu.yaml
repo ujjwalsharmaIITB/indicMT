@@ -102,8 +102,7 @@ timeout: 1800
 
 # Batching - identical to pretrain_human.2gpu.yaml's, including its OOM fix
 # (batch_size halved to 16384, max_generator_batches raised to 32,
-# accum_count doubled to [4] - see that file's header for the full incident
-# writeup). The fix was about the 128k vocab's generator memory cost, not
+# accum_count doubled to [4] - see that file's header). The fix was about the 128k vocab's generator memory cost, not
 # about which corpus is being read, so it carries over unchanged and
 # doesn't need re-deriving per data-ablation arm.
 bucket_size: 262144

@@ -1,7 +1,4 @@
-"""Stress test the live API with a custom asyncio+httpx load
-generator (not locust - httpx is already in the project environment, and this
-gives precise per-direction-class/payload-size/concurrency-level reporting
-without locust's CSV post-processing). Run against an already-running API (scripts/slurm/deployment_stress_test.sh
+"""Load test the live API with an asyncio+httpx load generator. Run against an already-running API (scripts/slurm/deployment_stress_test.sh
 starts uvicorn, waits for /api/health, then runs this).
 
 Reports p50/p95/p99 latency and RPS, broken out by:

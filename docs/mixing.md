@@ -76,10 +76,6 @@ This reaches each language's target in expectation, with ordinary statistical no
 synthetic two-language test: a language capped at 3x landed at exactly 3.00x, and an uncapped one landed within 0.1%
 of its predicted count. That is precise enough, because the proportions between languages are what matter.
 
-One bug is worth knowing about. The function that reads a byte range of lines (`iter_lines_in_range`) could drop a
-line at a chunk boundary. This is fixed. If you have mixtures built by an older version, rebuild them (the data
-preparation job takes `FRESH=1`).
-
 ## 5. Two separate mixtures
 
 - **`train-gold`** (`mixing/output/train_gold.jsonl`) is temperature-sampled from bpcc-human only.

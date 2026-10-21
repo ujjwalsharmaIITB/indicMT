@@ -1,8 +1,6 @@
 """Single source of truth for the 22-language + English tag scheme used across
-every data-pipeline script. Previously duplicated (and drifting) across
-create-multilingual-datasets.py (bpcc-human) and create-multilingual-dataset.py
-(bpcc-mined); both copies were also missing an "eng" entry, which crashed or
-silently degraded to <unk> for every English-tagged row.
+every data-pipeline script (bpcc-human and bpcc-mined), including the "eng"
+entry for English.
 """
 
 # ai4bharat/BPCC config keys for the 22 Scheduled Indian languages (lang_Script).

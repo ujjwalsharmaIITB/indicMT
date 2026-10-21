@@ -8,11 +8,10 @@
 #SBATCH --output=logs/%x-%j.out
 #SBATCH --error=logs/%x-%j.err
 
-# Job22: CPU stress test of the live API. Starts uvicorn on the allocated node, waits for
+# Job22: CPU load test of the live API. Starts uvicorn on the allocated node, waits for
 # /api/health, runs deployment/stress_test.py (asyncio + httpx; p50/p95/p99 and requests per
 # second across concurrency levels, payload sizes and direction classes), then stops the server.
 # CPU only. The staged model must exist in deployment/model/ (see deployment/README.md).
-# Status: written, not yet run (see docs/deployment.md).
 
 # --- Environment (adapt to your cluster) ---
 REPO_DIR="${REPO_DIR:-${SLURM_SUBMIT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}}"; cd "$REPO_DIR"
@@ -56,7 +55,7 @@ echo "Stopping API server"
 kill "$API_PID" 2>/dev/null
 wait "$API_PID" 2>/dev/null
 
-# Explicit success check: a crashing stress_test.py must not look like a completed run.
+# Fail the job if the load test failed or wrote no results.
 if [ "$STRESS_EXIT" -ne 0 ] || [ ! -s logs/stress_test_results.json ]; then
   echo "STRESS TEST FAILED (exit=$STRESS_EXIT, results file missing/empty)"
   exit 1

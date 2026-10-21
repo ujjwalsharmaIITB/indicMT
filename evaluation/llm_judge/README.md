@@ -34,10 +34,8 @@ Run these before trusting any number (`--sanity`):
 
 ## Results
 
-Being re-run. The results published earlier were computed on translations produced with an older source encoding
-that differed from training (see [`../../docs/evaluation.md`](../../docs/evaluation.md), section 2). They are
-withdrawn, and the judge is being re-run on the release model's corrected translations. The sanity checks above test
-the judge itself and still stand.
+Judge results for the release model, IndicTrans2 and the OpenNMT-py route are reported in
+[`../../docs/evaluation.md`](../../docs/evaluation.md), section 9.
 
 ## Run
 

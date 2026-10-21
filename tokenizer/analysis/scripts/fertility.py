@@ -28,22 +28,7 @@ files from the A2 sweep (see tokenizer/README.md).
   one joint vocab - model.SRC and model.TGT, disambiguated by vocab size (128K = Indic,
   32K = English) rather than hardcoded per repo, since which one is "SRC" vs "TGT" depends
   on the repo's own translation direction (an indic-en repo has SRC=Indic, TGT=English -
-  the opposite of what an en-indic repo would have). An earlier version of this script
-  pointed at a different repo (`indictrans2-en-indic-dist-200M`) with a hardcoded
-  SRC=English/TGT=Indic assumption; that repo's `model.SRC`/`model.TGT` files were never
-  actually fetched successfully in this project's one completed pre-fix run (A2/A3's
-  `fertility.csv` at commit a2ba875 has zero IndicTrans2 rows - a gated-repo/download
-  failure, not a scored-then-discarded result), so **there is no real "before" number to
-  compare against** - the only IndicTrans2 fertility numbers this project has ever produced
-  are from the corrected code below. The vocab-size disambiguation is still the right fix
-  (a fixed SRC=English/TGT=Indic assumption is genuinely wrong for an indic-en repo and
-  would silently swap which sub-tokenizer each language uses if pointed at one), but do not
-  restate a specific "X was inflated from A to B" claim anywhere else without an actual
-  completed buggy run backing it - an earlier draft of this docstring, this project's internal
-  notes, and the
-  commit message for this fix did exactly that (a specific but unverified "Malayalam read
-  10.7 instead of ~2.8" figure), which was a fabricated number, not a measurement; corrected
-  in a follow-up commit. Loaded directly via `sentencepiece`, bypassing the custom
+  the opposite of what an en-indic repo would have).. Loaded directly via `sentencepiece`, bypassing the custom
   transformers wrapper (IndicTransToolkit) since only raw piece counts are needed here.
 - Gemma 3 (google/gemma-3-27b-it), Gemma 4 (google/gemma-4-31B-it), Sarvam-30B
   (sarvamai/sarvam-30b), Sarvam-Translate (sarvamai/sarvam-translate), and Bodhan AI's

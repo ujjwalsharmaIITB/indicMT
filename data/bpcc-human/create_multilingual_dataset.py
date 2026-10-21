@@ -2,26 +2,16 @@
 dataset, expanded bidirectionally (src->tgt and tgt->src) and covering all
 44 directions (22 languages x {en->xx, xx->en}).
 
-Fixes vs. the original draft:
-- SPLIT_DATA_DIR/OUTPUT_DIR are resolved relative to this file, not hardcoded.
-- Uses the shared data/common/languages.py LANGUAGE_CODES (which now includes
-  "eng"), via the tag_for() helper, instead of a local duplicated dict.
-- The forward-direction tag lookup used to call LANGUAGE_CODES.get(...) with no
-  default (crashing with TypeError on any unmapped language, e.g. English
-  before this fix); it now uses the same <unk>-defaulting tag_for() helper as
-  the reverse direction, so both branches behave identically.
-- process_data() now iterates with itertuples() instead of iterrows(), which
-  is materially faster over the multi-million-row scale this is meant to run at.
-- **Correctness fix**: the original draft combined per-language datasets with
-  HF `datasets.interleave_datasets()`, which defaults to `stopping_strategy=
-  "first_exhausted"` - round-robin sampling that STOPS as soon as the
-  smallest language's dataset is exhausted, silently dropping the majority of
-  every larger language's data (confirmed on the first real run: bidirectional
-  expansion should double the row count, but the interleaved output came out
-  *smaller* than the pre-expansion count). Real temperature-sampled mixing is
-  a separate, deliberate step (see mixing/README.md: alpha=0.5, capped at 3x) - this script's
-  job is just to combine everything losslessly, so it now uses
-  `concatenate_datasets()` (matching bpcc-mined's approach) instead.
+Details:
+- SPLIT_DATA_DIR/OUTPUT_DIR are resolved relative to this file.
+- Tags come from the shared data/common/languages.py (tag_for(), which includes
+  "eng" and defaults to <unk>), used identically for both directions.
+- Per-language datasets are combined with `concatenate_datasets()`, not
+  `interleave_datasets()`: the latter defaults to `stopping_strategy=
+  "first_exhausted"` and would silently drop most of every larger language's
+  data. Temperature-sampled mixing is a separate step (see mixing/README.md:
+  alpha=0.5, capped at 3x); this script combines everything losslessly, and
+  asserts that bidirectional expansion exactly doubles the row count.
 """
 
 import json

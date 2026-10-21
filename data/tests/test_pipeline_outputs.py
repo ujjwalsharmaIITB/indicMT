@@ -81,8 +81,8 @@ def test_raw_download_stage_ran_if_expected():
 # --- Milestone: multilingual dataset merge preserves row count -------------
 
 def test_combined_train_dataset_has_no_silent_row_loss():
-    """Regression test for a real bug: an earlier draft combined per-language
-    datasets with HF datasets.interleave_datasets(), whose default
+    """Guards against silent row loss when combining per-language datasets:
+    HF datasets.interleave_datasets(), whose default
     stopping_strategy="first_exhausted" silently truncates to the length of
     the SMALLEST language's data, dropping most of every larger language's
     rows. Bidirectional expansion must exactly double the per-language split

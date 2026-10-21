@@ -92,8 +92,8 @@ save_checkpoint_steps: 100
 world_size: 2
 gpu_ranks: [0, 1]
 master_port: 12350
-# 1800 s NCCL timeout: a 300 s value died to an ALLREDUCE watchdog timeout after
-# 15h44m of clean training.
+# 1800 s NCCL timeout: 300 s is too short and can trigger an ALLREDUCE watchdog timeout
+# partway through a long run.
 timeout: 1800
 
 # Batching - the out-of-memory fix values from the header (batch_size 16384,
