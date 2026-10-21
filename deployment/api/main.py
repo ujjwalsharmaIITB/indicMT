@@ -2,10 +2,16 @@
 exposes /api/health, /api/languages, /api/translate, and mounts the static
 frontend at "/" - one process, one port, no compose file needed.
 
-Config via env vars (all have sensible defaults for local/dev use; the
-Dockerfile sets MODEL_DIR/SPM_PATH to the staged deployment/model/ paths):
+Model files: if MODEL_DIR and SPM_PATH exist they are used as they are. Otherwise the
+int8 model (indicMT/) and tokenizer (indicMT.spm.model) are taken from the Hugging Face
+repository HF_REPO: from the local Hugging Face cache when already downloaded, else
+downloaded once into that cache.
+
+Config via env vars (all have sensible defaults for local/dev use):
   MODEL_DIR       - CTranslate2 model directory (default: deployment/model/ct2_model)
   SPM_PATH        - SentencePiece .model file (default: deployment/model/spm_128000.model)
+  HF_REPO         - Hugging Face model repository (default: ujjwalsharmaIITB/indicMT)
+  HF_REVISION     - branch, tag or commit of HF_REPO (default: main)
   CHECKPOINT_NAME - identity string for /api/health (default: indicmt-final-int8)
   QUANTIZATION    - identity string for /api/health (default: int8)
   INTER_THREADS   - CTranslate2 parallel-translation thread count (default: 4)
@@ -34,19 +40,50 @@ QUANTIZATION = os.environ.get("QUANTIZATION", "int8")
 INTER_THREADS = int(os.environ.get("INTER_THREADS", "4"))
 INTRA_THREADS = int(os.environ.get("INTRA_THREADS", "1"))
 BEAM_SIZE = int(os.environ.get("BEAM_SIZE", "2"))
+HF_REPO = os.environ.get("HF_REPO", "ujjwalsharmaIITB/indicMT")
+HF_REVISION = os.environ.get("HF_REVISION", "main")
+HF_FILES = ["indicMT/*", "indicMT.spm.model"]
 
 state = {}
 
 
+def resolve_model_files() -> tuple[str, str]:
+    """Local MODEL_DIR/SPM_PATH if present, else the Hugging Face cache, else a download."""
+    if Path(MODEL_DIR).is_dir() and Path(SPM_PATH).is_file():
+        print(f"[model] serving local files: {MODEL_DIR}", flush=True)
+        return MODEL_DIR, SPM_PATH
+    from huggingface_hub import snapshot_download
+    from huggingface_hub.errors import LocalEntryNotFoundError
+
+    def files_in(snap):
+        model_dir, spm_path = Path(snap) / "indicMT", Path(snap) / "indicMT.spm.model"
+        ok = (model_dir / "model.bin").is_file() and spm_path.is_file()
+        return (model_dir, spm_path) if ok else None
+
+    found = None
+    try:
+        snap = snapshot_download(HF_REPO, revision=HF_REVISION, allow_patterns=HF_FILES,
+                                 local_files_only=True)
+        found = files_in(snap)
+    except LocalEntryNotFoundError:
+        pass
+    if found:
+        print(f"[model] serving {HF_REPO} from the local Hugging Face cache: {snap}", flush=True)
+    else:
+        print(f"[model] {HF_REPO} not (fully) in the local cache, downloading", flush=True)
+        snap = snapshot_download(HF_REPO, revision=HF_REVISION, allow_patterns=HF_FILES)
+        found = files_in(snap)
+        if not found:
+            raise RuntimeError(f"could not get indicMT/model.bin and indicMT.spm.model from {HF_REPO}: without network access, download them into the Hugging Face cache on a machine that has it, or set MODEL_DIR and SPM_PATH")
+    model_dir, spm_path = found
+    return str(model_dir), str(spm_path)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if not Path(MODEL_DIR).exists():
-        raise RuntimeError(
-            f"MODEL_DIR not found: {MODEL_DIR} - run deployment/convert_to_ct2.py "
-            "and stage the chosen variant into deployment/model/ct2_model first."
-        )
+    model_dir, spm_path = resolve_model_files()
     state["translator"] = RoutedTranslator(
-        MODEL_DIR, SPM_PATH, inter_threads=INTER_THREADS, intra_threads=INTRA_THREADS,
+        model_dir, spm_path, inter_threads=INTER_THREADS, intra_threads=INTRA_THREADS,
         beam_size=BEAM_SIZE,
     )
     yield

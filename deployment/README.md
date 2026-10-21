@@ -51,23 +51,17 @@ serving choice. Job21 (`scripts/slurm/deployment_quant_significance.sh`) runs th
 
 ## 2. Run the API (no container needed)
 
-Get the model from [Hugging Face](https://huggingface.co/ujjwalsharmaIITB/indicMT) (its model card is [`../huggingface/README.md`](../huggingface/README.md)), or convert your own (step 1). Stage the int8 model and the tokenizer:
+The API takes the int8 model and tokenizer from [Hugging Face](https://huggingface.co/ujjwalsharmaIITB/indicMT) (its model card is [`../huggingface/README.md`](../huggingface/README.md)). At startup it uses the local Hugging Face cache if the model is already there, and downloads it into that cache otherwise, so only the first start downloads. To serve your own conversion (step 1) instead, set `MODEL_DIR` and `SPM_PATH`; when both exist they are used and nothing is downloaded.
 
 ```bash
 pip install -r requirements-deploy.txt   # minimal serving environment (CPU, no PyTorch)
-mkdir -p deployment/model/ct2_model
-# from Hugging Face:
-huggingface-cli download ujjwalsharmaIITB/indicMT --include "indicMT/*" "indicMT.spm.model" --local-dir hf-indicmt
-cp hf-indicmt/indicMT/* deployment/model/ct2_model/
-cp hf-indicmt/indicMT.spm.model deployment/model/spm_128000.model
-# or from your own conversion:
-# cp -r 128k-spm/opennmt/bpcc-ft-combined-human/ct2/model_step_1800/int8/* deployment/model/ct2_model/
-# cp tokenizer/sweep/mixed/spm_128000.model deployment/model/spm_128000.model
 python deployment/stage_common.py
+# while the Hugging Face repository is private: huggingface-cli login (or export HF_TOKEN=...)
 
 # quick command-line check of the raw CTranslate2 model
-python deployment/ct2_infer.py --model-dir deployment/model/ct2_model \
-  --spm deployment/model/spm_128000.model --text "Hello, how are you?" --target-lang hi
+# (needs local files: huggingface-cli download ujjwalsharmaIITB/indicMT --include "indicMT/*" "indicMT.spm.model" --local-dir hf-indicmt)
+python deployment/ct2_infer.py --model-dir hf-indicmt/indicMT \
+  --spm hf-indicmt/indicMT.spm.model --text "Hello, how are you?" --target-lang hi
 
 # serve (open http://localhost:8000/ for the frontend)
 uvicorn deployment.api.main:app --host 0.0.0.0 --port 8000
@@ -96,6 +90,8 @@ Settings are environment variables:
 |---|---|---|
 | `MODEL_DIR` | `deployment/model/ct2_model` | CTranslate2 model directory |
 | `SPM_PATH` | `deployment/model/spm_128000.model` | SentencePiece model |
+| `HF_REPO` | `ujjwalsharmaIITB/indicMT` | Hugging Face repository used when `MODEL_DIR`/`SPM_PATH` are absent |
+| `HF_REVISION` | `main` | Branch, tag or commit of `HF_REPO` |
 | `CHECKPOINT_NAME` | `indicmt-final-int8` | label shown by `/api/health` |
 | `QUANTIZATION` | `int8` | label shown by `/api/health` |
 | `INTER_THREADS` / `INTRA_THREADS` | 4 / 1 | CTranslate2 parallelism |
