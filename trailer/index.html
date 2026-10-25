@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IndicMT Trailer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Ol Chiki (Santali) and Meetei Mayek (Manipuri) are missing from most system fonts -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Meetei+Mayek:wght@600&family=Noto+Sans+Ol+Chiki:wght@600&display=swap">
+<link rel="stylesheet" href="trailer.css">
+</head>
+<body>
+
+<div id="viewport">
+  <div id="stage">
+
+    <!-- Animated sunshine background: a rotating base gradient plus four soft light blobs,
+         moved only with transform/opacity. Driven by t in trailer.js (per-scene keyframes). -->
+    <div id="bg" aria-hidden="true">
+      <div class="bg-base" id="bg-base"></div>
+      <div class="bg-blob bg-yellow" id="bg-blob-0"></div>
+      <div class="bg-blob bg-orange" id="bg-blob-1"></div>
+      <div class="bg-blob bg-amber" id="bg-blob-2"></div>
+      <div class="bg-blob bg-light" id="bg-blob-3"></div>
+      <div class="bg-flash" id="bg-flash"></div>
+    </div>
+
+    <div id="camera">
+
+    <!-- Scene 0: intro, 0:00-0:04 -->
+    <section class="scene" id="scene-0" data-start="0" data-end="4">
+      <div class="intro-kicker" id="s0-kicker">Introducing</div>
+      <h1 class="brand" id="s0-title">IndicMT</h1>
+      <div class="intro-line intro-params" id="s0-params"></div>
+      <div class="intro-line intro-langs" id="s0-langs"></div>
+    </section>
+
+    <!-- Scene 1: directions (translation ticker), 0:04-0:08 -->
+    <section class="scene" id="scene-1" data-start="4" data-end="8">
+      <div class="brand brand-header" id="s1-title">IndicMT</div>
+      <div class="ticker" id="s1-ticker"></div>
+      <div class="dir-sub" id="s1-sub">Both directions. One model.</div>
+    </section>
+
+    <!-- Scene 2: size, 0:08-0:16 -->
+    <section class="scene" id="scene-2" data-start="8" data-end="16">
+      <svg class="chart-svg" id="s2-svg" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+      <div class="footnote" id="s2-footnote">Parameter counts from each model's card or report. gemini-3.5-flash is not shown: its size is not published.</div>
+    </section>
+
+    <!-- Scene 3: fertility, 0:16-0:24 -->
+    <section class="scene" id="scene-3" data-start="16" data-end="24">
+      <svg class="chart-svg" id="s3-svg" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+      <div class="footnote" id="s3-footnote">Measured on IN22-Gen + IN22-Conv, 2,527 sentences per language.</div>
+    </section>
+
+    <!-- Scene 4: quality en->xx, 0:24-0:40 -->
+    <section class="scene" id="scene-4" data-start="24" data-end="40">
+      <svg class="chart-svg" id="s4-svg" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+      <div class="footnote" id="s4-footnote">IndicMT: final model (CTranslate2 float32), beam 5, corpus-level chrF++, full IN22-Gen, selected on IN22. † IndicTrans2 1B, Indic Translate, Sarvam Translate: run by us, same corpus-level chrF++. Others: published model-card scores (sentence-level, greedy), indicative. * 16 of 22 languages.</div>
+    </section>
+
+    <!-- Scene 5: "Built for deployment", part 1 (quantization), 0:44-0:52 -->
+    <section class="scene" id="scene-5" data-start="44" data-end="52">
+      <svg class="chart-svg" id="s5-svg" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+      <div class="small-text" id="s5-smalltext" style="left:5%; bottom:8%;"></div>
+      <div class="footnote" id="s5-footnote"></div>
+    </section>
+
+    <!-- Scene 5b: LLM judge (Gemma 4 31B-it, final model), 0:40-0:44 -->
+    <section class="scene" id="scene-5b" data-start="40" data-end="44">
+      <svg class="chart-svg" id="s5b-svg" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+      <div class="judge-big" id="s5b-big"></div>
+      <div class="small-text" id="s5b-smalltext" style="left:650px; transform:translateX(-50%); white-space:nowrap; top:836px;"></div>
+      <div class="footnote" id="s5b-footnote"></div>
+    </section>
+
+    <!-- Scene 7: "Built for deployment", part 2 (runs on a CPU, every direction), 0:52-0:58.
+         The int8 circle from scene 5 match-cuts into the first tile's disc. -->
+    <section class="scene" id="scene-7" data-start="52" data-end="58">
+      <div class="dep-tiles" id="s7-tiles">
+        <svg class="dep-icons" id="s7-icons" width="1920" height="600" viewBox="0 0 1920 600"></svg>
+        <div class="dep-tile" id="s7-tile-0"><div class="dep-value num"></div><div class="dep-label"></div></div>
+        <div class="dep-tile" id="s7-tile-1"><div class="dep-value num"></div><div class="dep-label"></div></div>
+        <div class="dep-tile" id="s7-tile-2"><div class="dep-value num"></div><div class="dep-label"></div></div>
+      </div>
+      <svg class="chart-svg" id="s7-svg" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+      <div class="dep-small" id="s7-smalltext"></div>
+      <div class="footnote" id="s7-footnote"></div>
+    </section>
+
+    <!-- Scene 6: end card, 0:58-1:10, three beats (stats, links, IndicMT + closing line) -->
+    <section class="scene" id="scene-6" data-start="58" data-end="70">
+      <!-- beat 3: soft glow behind the centred wordmark (before the title so it sits underneath) -->
+      <div class="end-glow" id="s6-glow"></div>
+      <div class="brand end-title" id="s6-title">IndicMT</div>
+      <div class="end-underline" id="s6-underline"></div>
+      <div class="stat-tiles" id="s6-tiles">
+        <div class="stat-tile" id="s6-tile-0"><div class="stat-value num"></div><div class="stat-label"></div></div>
+        <div class="stat-tile" id="s6-tile-1"><div class="stat-value num"></div><div class="stat-label"></div></div>
+        <div class="stat-tile" id="s6-tile-2"><div class="stat-value num"></div><div class="stat-label"></div></div>
+      </div>
+      <div class="closing-line" id="s6-closing">Built for India. To deploy at scale.</div>
+      <!-- beat 2: links (URLs from DATA.links; null = labelled placeholder, never an invented URL) -->
+      <div class="end-links" id="s6-links">
+        <div class="link-card" id="s6-link-0">
+          <svg class="link-icon" width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#7C3AED"/><path d="M20 22 H44 M20 30 H44 M20 38 H36" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>
+          <div class="link-text"><div class="link-label">Read the blog</div><div class="link-url"></div></div>
+        </div>
+        <div class="link-card" id="s6-link-1">
+          <svg class="link-icon" width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#7C3AED"/><path d="M23 17 H37 L43 23 V47 H23 Z M37 17 V23 H43" fill="none" stroke="#fff" stroke-width="3.5" stroke-linejoin="round"/></svg>
+          <div class="link-text"><div class="link-label">Technical report</div><div class="link-url"></div></div>
+        </div>
+        <div class="link-card" id="s6-link-3">
+          <svg class="link-icon" width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#7C3AED"/><path d="M26 22 L16 32 L26 42 M38 22 L48 32 L38 42" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="link-text"><div class="link-label">Code</div><div class="link-url"></div></div>
+        </div>
+        <div class="link-card" id="s6-link-2">
+          <svg class="link-icon" width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#7C3AED"/><path d="M32 16 V38 M23 30 L32 39 L41 30 M20 46 H44" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="link-text"><div class="link-label">Model weights</div><div class="link-url"></div></div>
+        </div>
+      </div>
+
+    </section>
+
+    </div>
+  </div>
+</div>
+
+<div id="hud">
+  <button id="hud-play" aria-label="Play/Pause (space)">Play</button>
+  <button id="hud-restart" aria-label="Restart (R)">Restart</button>
+  <input type="range" id="hud-scrubber" min="0" max="70" step="0.01" value="0">
+  <span class="time-readout num" id="hud-time">0.00 / 70.00</span>
+  <span id="hud-audio-status"></span>
+  <span>space: play/pause · R: restart · H: hide time readout</span>
+</div>
+
+<audio id="music" preload="auto">
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<script src="data.js"></script>
+<script src="trailer.js"></script>
+</body>
+</html>
