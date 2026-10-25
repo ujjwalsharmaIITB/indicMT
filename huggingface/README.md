@@ -296,8 +296,7 @@ int16 and int8 are **not significantly different from float32** on IN22-Gen, and
 <h3 id="compared-with-other-systems" style="color:#A855F7">Compared with other systems</h3>
 
 **IndicMT (CTranslate2 float32), IndicTrans2, Indic Translate and Sarvam Translate are from our own runs** (corpus-level chrF++; beam 5 for
-IndicMT and IndicTrans2, greedy decoding for the two LLMs). Our runs of Indic Translate and Sarvam Translate are in
-progress; until they finish, their rows show the scores from the Indic Translate page. **All other baselines are taken
+IndicMT and IndicTrans2, greedy decoding for the two LLMs). **All other baselines are taken
 from the
 [`bodhan-ai/indic-translate`](https://huggingface.co/bodhan-ai/indic-translate) model page** (read on 2026-09-19),
 which reports sentence-level chrF++ with greedy decoding on IN22-Gen only, so those rows are indicative. A star marks a
@@ -307,8 +306,8 @@ system that covers only 16 of the 22 languages.
 |---|---:|---:|---:|---:|---:|---|
 | **IndicMT** | **0.154B** | **47.15** | **53.87** | **43.15** | **50.59** | our run |
 | IndicTrans2 1B | 1.1B | 46.39 | 62.48 | 42.61 | 55.63 | our run |
-| Indic Translate | 7.94B | 47.70 | 60.40 | | | Indic Translate page (our run in progress) |
-| Sarvam Translate | 4B | 48.90 | 52.40 | | | Indic Translate page (our run in progress) |
+| Indic Translate | 7.94B | 47.73 | 60.33 | 45.04 | 55.10 | our run |
+| Sarvam Translate | 4B | 48.74 | 51.82 | 45.71 | 49.77 | our run |
 | gemini-3.5-flash | undisclosed | 40.30 | 66.60 | | | Indic Translate page |
 | gemma-4-31B-it | 30.7B | 39.20 | 59.60 | | | Indic Translate page |
 | translategemma-27b-it * | 27B | 39.60 | 58.50 | | | Indic Translate page |
@@ -318,6 +317,11 @@ system that covers only 16 of the 22 languages.
 | gemma-3-12b-it | 12.19B | 28.80 | 53.20 | | | Indic Translate page |
 | translategemma-4b-it * | 4B | 31.20 | 49.20 | | | Indic Translate page |
 | gemma-3-4b-it | 4.3B | 22.90 | 47.10 | | | Indic Translate page |
+
+Under the same scoring, IndicMT is 0.58 chrF++ below Indic Translate and 1.59 below Sarvam Translate on IN22-Gen
+en→xx (1.89 and 2.56 below on IN22-Conv), and ahead of Sarvam Translate on xx→en on both test sets. BLEU from our runs
+(IN22-Gen en→xx / xx→en, IN22-Conv en→xx / xx→en): IndicMT 19.19 / 29.19, 15.73 / 28.36; IndicTrans2 17.88 / 39.12,
+15.22 / 34.02; Indic Translate 19.37 / 36.43, 17.30 / 33.37; Sarvam Translate 20.67 / 28.32, 17.95 / 27.51.
 
 <details>
 <summary>Per-language chrF++ (CTranslate2 float32, beam 5)</summary>
@@ -348,6 +352,37 @@ system that covers only 16 of the 22 languages.
 | Urdu | 62.73 | 61.04 | 56.44 | 58.34 |
 
 </details>
+
+<h2 id="compute" style="color:#7C3AED">Compute</h2>
+
+GPU-hours are GPUs × wall-clock hours, from the cluster's job accounting. Training ran on 4 × A100 80 GB; evaluation and the LLM judge ran on A40 and L40 GPUs.
+
+**Release model only.** What it takes to reproduce the released model:
+
+| Stage | GPUs | GPU-hours |
+|---|---|---:|
+| Pre-training, combined data, to step 13,600 | 4 × A100 | 100 |
+| Fine-tuning on human data, to step 1,800 | 4 × A100 | 11 |
+| IN22-Gen and IN22-Conv evaluation of one checkpoint, 88 directions, OpenNMT-py | 2 × A40 | 0.5 |
+| chrF++ trajectory: the same evaluation for 63 checkpoints (54 pre-training up to step 13,600, 9 fine-tuning up to step 1,800) | 2 × A40 | 32 |
+| IN22-Gen and IN22-Conv evaluation, CTranslate2 float32 (reported scores) | CPU, 16 cores | 0 (about 1 hour) |
+| LLM judge, English→Indic | 2 × A40 | 7.7 |
+| **Total** (the trajectory includes the single checkpoint) | | **about 150** |
+
+**Whole project.** Everything run for IndicMT, including models that were not released:
+
+| Work | GPU-hours |
+|---|---:|
+| Pre-training (human, mined and combined data) | 1,539 |
+| Deeper architectures (12+18 and 18+18 layers) | 715 |
+| IN22 evaluation of checkpoints | 473 |
+| Fine-tuning (with and without replay, deeper models) | 248 |
+| LLM judge | 135 |
+| Baseline runs (IndicTrans2, Indic Translate, Sarvam Translate) | 15 |
+| Setup and tests | 4 |
+| **Total** | **3,129** |
+
+By GPU type: 2,507 A100, 479 A40, 143 L40.
 
 <h2 id="limitations" style="color:#7C3AED">Limitations</h2>
 

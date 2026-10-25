@@ -93,8 +93,8 @@ half of it.
 
 One nuance is kept visible. **Sanskrit** is the worst language from 32k upward, and it keeps improving through 192k
 after the average has flattened. That is a real gain, but it lands on one language while the cost lands on the whole
-model. After training, Sanskrit is the second-weakest English-to-Indic direction (36.82 chrF++ on IN22-Gen), but it
-trails the best published system by 1.98, below the median gap of 2.69 across languages. So the evaluation does not
+model. After training, Sanskrit is the second-weakest English-to-Indic direction (37.26 chrF++ on IN22-Gen), but it
+trails the best of our three baseline runs by 0.82, well below the median gap of 2.00 across languages. So the evaluation does not
 single out the vocabulary.
 
 ## 4. Comparison with external tokenizers

@@ -4,16 +4,18 @@
   "url": "https://huggingface.co/bodhan-ai/indic-translate",
   "fetched": "2026-09-19",
   "own_runs": [
-   "IndicTrans2"
+   "IndicTrans2",
+   "Indic Translate",
+   "Sarvam Translate"
   ]
  },
- "protocol": "IN22-Gen, 1,024 sentences per direction, 22 languages, chrF++. IndicTrans2 is our own run (corpus-level chrF++, beam 5). The other baselines are taken from the bodhan-ai/indic-translate model page (sentence-level chrF++, greedy decoding).",
+ "protocol": "IN22-Gen, 1,024 sentences per direction, 22 languages, chrF++. IndicTrans2, Indic Translate and Sarvam Translate are our own runs (corpus-level chrF++; beam 5 for IndicTrans2, greedy decoding for the two LLMs). The other baselines are taken from the bodhan-ai/indic-translate model page (sentence-level chrF++, greedy decoding).",
  "partial_note": "Rows marked partial cover only 16 of the 22 IN22-Gen languages (translategemma has no code path for Bodo, Dogri, Konkani, Maithili, Manipuri or Santali) and are not directly comparable to the 22-language aggregates.",
  "macro": [
   {
    "model": "Sarvam Translate",
-   "en_xx": 48.9,
-   "xx_en": 52.4,
+   "en_xx": 48.74,
+   "xx_en": 51.82,
    "partial": false,
    "params": {
     "total_b": 4.0,
@@ -21,7 +23,20 @@
     "kind": "rounded",
     "note": "Hugging Face model page shows '4B params'; fine-tuned from Gemma 3 4B"
    },
-   "source": "page"
+   "source": "own"
+  },
+  {
+   "model": "Indic Translate",
+   "en_xx": 47.73,
+   "xx_en": 60.33,
+   "partial": false,
+   "params": {
+    "total_b": 7.94,
+    "active_b": null,
+    "kind": "card",
+    "note": "Total parameters as stated on its own model card; built on Gemma 4 E4B"
+   },
+   "source": "own"
   },
   {
    "model": "IndicTrans2",
@@ -35,19 +50,6 @@
     "note": "The 1.1B indictrans2-en-indic-1B and indictrans2-indic-en-1B models, run by us"
    },
    "source": "own"
-  },
-  {
-   "model": "Indic Translate",
-   "en_xx": 47.7,
-   "xx_en": 60.4,
-   "partial": false,
-   "params": {
-    "total_b": 7.94,
-    "active_b": null,
-    "kind": "card",
-    "note": "Total parameters as stated on its own model card; built on Gemma 4 E4B"
-   },
-   "source": "page"
   },
   {
    "model": "gemini-3.5-flash",
@@ -171,23 +173,23 @@
   "Indic Translate": {
    "as": [
     45.5,
-    64.5
+    64.3
    ],
    "bn": [
     48.9,
-    62.1
+    62.0
    ],
    "br": [
-    48.5,
-    54.2
+    48.4,
+    54.3
    ],
    "doi": [
     54.5,
-    66.9
+    67.0
    ],
    "gu": [
-    52.3,
-    64.9
+    52.5,
+    64.8
    ],
    "hi": [
     55.5,
@@ -195,11 +197,11 @@
    ],
    "kn": [
     51.1,
-    63.2
+    63.1
    ],
    "ks": [
-    34.4,
-    56.7
+    35.1,
+    56.6
    ],
    "gom": [
     43.8,
@@ -207,18 +209,18 @@
    ],
    "mai": [
     50.2,
-    63.0
+    62.9
    ],
    "ml": [
-    47.1,
-    61.8
+    47.0,
+    61.7
    ],
    "mni": [
-    44.3,
-    52.7
+    44.2,
+    52.9
    ],
    "mr": [
-    50.2,
+    50.1,
     62.3
    ],
    "ne": [
@@ -234,20 +236,20 @@
     59.2
    ],
    "sa": [
-    36.0,
+    35.9,
     53.6
    ],
    "sat": [
-    39.2,
-    47.3
+    39.3,
+    46.7
    ],
    "sd": [
-    37.5,
-    55.5
+    37.3,
+    55.6
    ],
    "ta": [
-    50.2,
-    58.4
+    50.4,
+    58.3
    ],
    "te": [
     51.3,
@@ -261,67 +263,67 @@
   "Sarvam Translate": {
    "as": [
     46.4,
-    54.1
+    54.6
    ],
    "bn": [
-    49.4,
-    53.1
+    49.5,
+    52.1
    ],
    "br": [
-    48.9,
-    48.9
+    48.8,
+    48.4
    ],
    "doi": [
-    58.2,
-    56.3
+    58.3,
+    55.8
    ],
    "gu": [
     53.1,
-    55.2
+    54.2
    ],
    "hi": [
-    56.4,
-    56.1
+    56.6,
+    55.4
    ],
    "kn": [
-    52.2,
-    53.4
+    52.1,
+    53.2
    ],
    "ks": [
     35.1,
-    50.1
+    49.2
    ],
    "gom": [
-    44.9,
-    48.2
+    45.0,
+    48.1
    ],
    "mai": [
     50.5,
-    55.2
+    54.3
    ],
    "ml": [
     47.7,
     52.5
    ],
    "mni": [
-    45.5,
-    47.3
+    45.3,
+    46.3
    ],
    "mr": [
-    51.3,
-    54.3
+    51.4,
+    53.5
    ],
    "ne": [
-    49.9,
-    56.9
+    50.2,
+    56.5
    ],
    "or": [
-    48.2,
-    54.6
+    48.1,
+    54.0
    ],
    "pa": [
-    48.3,
-    53.6
+    48.2,
+    53.0
    ],
    "sa": [
     38.1,
@@ -329,23 +331,23 @@
    ],
    "sat": [
     40.9,
-    43.4
+    42.6
    ],
    "sd": [
-    39.1,
-    49.0
+    38.9,
+    48.6
    ],
    "ta": [
-    50.9,
-    50.1
+    51.1,
+    49.6
    ],
    "te": [
-    51.6,
-    53.1
+    51.8,
+    53.0
    ],
    "ur": [
-    65.3,
-    58.6
+    65.4,
+    57.8
    ]
   },
   "IndicTrans2": {

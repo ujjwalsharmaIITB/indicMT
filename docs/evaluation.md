@@ -91,34 +91,49 @@ single seed and have not been significance-tested. The release model was kept.
 
 ## 5. Against published systems (IN22-Gen only)
 
-Baselines are the published chrF++ scores from the `bodhan-ai/indic-translate` model card (read on 2026-09-19),
-except IndicTrans2, which we re-ran (section 6). The card's scores are **sentence-level with greedy decoding**. Ours
-and the re-run IndicTrans2 scores are **corpus-level with beam 5**. So the comparison is indicative, not exact. The
-card has no IN22-Conv baselines. The table is sorted by the mean of the two directions. A star marks a system that
+IndicTrans2, Indic Translate and Sarvam Translate are **our own runs** on both test sets (section 6 for IndicTrans2;
+Indic Translate and Sarvam Translate with vLLM, greedy decoding and each model's documented prompt), scored exactly like
+IndicMT: corpus-level chrF++, the same references, macro over 22 languages. **All other baselines are the published
+chrF++ scores from the `bodhan-ai/indic-translate` model page** (read on 2026-09-19), which are **sentence-level with
+greedy decoding** on IN22-Gen only, so the comparison with those rows is indicative, not exact. IndicMT is the
+CTranslate2 float32 model (beam 5). The table is sorted by the mean of the two directions. A star marks a system that
 covers only 16 of the 22 languages.
 
-| Rank | Model | en→xx | xx→en | Mean | Parameters |
-|---|---|---|---|---|---|
-| 1 | IndicTrans2 † | 46.39 | 62.48 | 54.44 | 1.1B |
-| 2 | Indic Translate | 47.70 | 60.40 | 54.05 | 7.94B |
-| 3 | gemini-3.5-flash | 40.30 | 66.60 | 53.45 | undisclosed |
-| 4 | Sarvam Translate | 48.90 | 52.40 | 50.65 | 4B |
-| 5 | **IndicMT (release model)** | **46.95** | **53.69** | **50.32** | 0.154B |
-| 6 | gemma-4-31B-it | 39.20 | 59.60 | 49.40 | 30.7B |
-| 7 | translategemma-27b-it * | 39.60 | 58.50 | 49.05 | 27B |
-| 8 | gemma-4-26B-a4b-it | 36.20 | 56.60 | 46.40 | 25.2B |
-| 9 | translategemma-12b-it * | 37.10 | 55.00 | 46.05 | 12B |
-| 10 | gemma-3-27b-it | 31.90 | 55.50 | 43.70 | 27.43B |
-| 11 | gemma-3-12b-it | 28.80 | 53.20 | 41.00 | 12.19B |
-| 12 | translategemma-4b-it * | 31.20 | 49.20 | 40.20 | 4B |
-| 13 | gemma-3-4b-it | 22.90 | 47.10 | 35.00 | 4.3B |
+| Rank | Model | en→xx | xx→en | Mean | Parameters | Source |
+|---|---|---|---|---|---|---|
+| 1 | IndicTrans2 1B | 46.39 | 62.48 | 54.44 | 1.1B | our run |
+| 2 | Indic Translate | 47.73 | 60.33 | 54.03 | 7.94B | our run |
+| 3 | gemini-3.5-flash | 40.30 | 66.60 | 53.45 | undisclosed | model page |
+| 4 | **IndicMT (release model)** | **47.15** | **53.87** | **50.51** | 0.154B | our run |
+| 5 | Sarvam Translate | 48.74 | 51.82 | 50.28 | 4B | our run |
+| 6 | gemma-4-31B-it | 39.20 | 59.60 | 49.40 | 30.7B | model page |
+| 7 | translategemma-27b-it * | 39.60 | 58.50 | 49.05 | 27B | model page |
+| 8 | gemma-4-26B-a4b-it | 36.20 | 56.60 | 46.40 | 25.2B | model page |
+| 9 | translategemma-12b-it * | 37.10 | 55.00 | 46.05 | 12B | model page |
+| 10 | gemma-3-27b-it | 31.90 | 55.50 | 43.70 | 27.43B | model page |
+| 11 | gemma-3-12b-it | 28.80 | 53.20 | 41.00 | 12.19B | model page |
+| 12 | translategemma-4b-it * | 31.20 | 49.20 | 40.20 | 4B | model page |
+| 13 | gemma-3-4b-it | 22.90 | 47.10 | 35.00 | 4.3B | model page |
 
-† Re-run by us with our protocol (beam 5, corpus-level chrF++). The model card lists 48.60 / 62.80.
+The model page lists 48.6 / 62.8 for IndicTrans2, 47.7 / 60.4 for Indic Translate and 48.9 / 52.4 for Sarvam
+Translate; under our protocol these are 46.39 / 62.48, 47.73 / 60.33 and 48.74 / 51.82.
 
-IndicMT ranks 5th of 13 on the mean, 0.92 above gemma-4-31B-it and 0.33 below Sarvam Translate. It is **3rd on
-en→xx**, behind Sarvam Translate (48.9, 1.95 higher) and Indic Translate (47.7, 0.75 higher), and 0.56 above the
-re-run IndicTrans2. It is 9th on xx→en, ahead of Sarvam Translate (52.4). It has 7.2 times fewer parameters than the
-1.1B IndicTrans2 and 26 times fewer than Sarvam Translate.
+IndicMT ranks 4th of 13 on the mean, 0.23 above Sarvam Translate. It is **3rd on en→xx**, behind Sarvam Translate
+(48.74, 1.59 higher) and Indic Translate (47.73, 0.58 higher), and 0.76 above IndicTrans2. It is 9th on xx→en, ahead of
+Sarvam Translate (51.82). It has 7.2 times fewer parameters than the 1.1B IndicTrans2, 26 times fewer than Sarvam
+Translate and 51.6 times fewer than Indic Translate.
+
+**IN22-Conv and BLEU (our runs).**
+
+| Model | Gen en→xx chrF++ / BLEU | Gen xx→en chrF++ / BLEU | Conv en→xx chrF++ / BLEU | Conv xx→en chrF++ / BLEU |
+|---|---|---|---|---|
+| IndicMT (CTranslate2 float32) | 47.15 / 19.19 | 53.87 / 29.19 | 43.15 / 15.73 | 50.59 / 28.36 |
+| IndicTrans2 1B | 46.39 / 17.88 | 62.48 / 39.12 | 42.61 / 15.22 | 55.63 / 34.02 |
+| Indic Translate | 47.73 / 19.37 | 60.33 / 36.43 | 45.04 / 17.30 | 55.10 / 33.37 |
+| Sarvam Translate | 48.74 / 20.67 | 51.82 / 28.32 | 45.71 / 17.95 | 49.77 / 27.51 |
+
+On IN22-Conv en→xx IndicMT is 1.89 chrF++ below Indic Translate and 2.56 below Sarvam Translate; on xx→en it is ahead
+of Sarvam Translate on both test sets.
 
 ### Model sizes
 
@@ -169,47 +184,47 @@ IndicTrans2 1B has 1.1B parameters, 7.2 times more than IndicMT. The IN22-Conv c
 
 ## 7. Results by language
 
-chrF++ of the release model on both test sets, with the best published IN22-Gen score among the three systems whose
-card lists per-language numbers (Indic Translate, Sarvam Translate, IndicTrans2; model-card values):
+chrF++ of the release model (CTranslate2 float32, beam 5) on both test sets, with the best IN22-Gen score among our
+runs of the three baselines with per-language numbers (Indic Translate, Sarvam Translate, IndicTrans2 1B), all scored
+with the same protocol:
 
-| Language | en→xx Gen | en→xx Conv | xx→en Gen | xx→en Conv | en→xx best published (Gen) | xx→en best published (Gen) |
+| Language | en→xx Gen | en→xx Conv | xx→en Gen | xx→en Conv | en→xx best baseline (Gen) | xx→en best baseline (Gen) |
 |---|---|---|---|---|---|---|
-| Assamese | 44.53 | 44.20 | 55.78 | 55.41 | 47.1 | 65.8 |
-| Bengali | 47.18 | 44.68 | 54.23 | 53.41 | 51.8 | 63.2 |
-| Bodo | 49.15 | 46.17 | 52.29 | 49.08 | 48.9 | 62.1 |
-| Dogri | 55.55 | 50.46 | 60.83 | 57.88 | 58.2 | 72.6 |
-| Gujarati | 50.77 | 50.09 | 57.84 | 56.40 | 53.5 | 66.5 |
-| Hindi | 53.12 | 47.18 | 56.77 | 55.13 | 56.7 | 65.4 |
-| Kannada | 48.96 | 31.70 | 55.17 | 43.00 | 52.2 | 64.2 |
-| Kashmiri | 32.89 | 27.30 | 50.20 | 46.91 | 40.2 | 60.4 |
-| Konkani | 43.40 | 41.24 | 49.60 | 45.23 | 45.2 | 59.2 |
-| Maithili | 49.57 | 43.85 | 56.51 | 51.88 | 50.5 | 64.8 |
-| Malayalam | 44.65 | 37.80 | 53.28 | 48.08 | 50.9 | 64.5 |
-| Manipuri | 45.60 | 41.48 | 50.13 | 46.29 | 45.5 | 57.9 |
-| Marathi | 48.47 | 45.74 | 54.77 | 52.68 | 51.3 | 63.7 |
-| Nepali | 49.53 | 49.54 | 58.69 | 57.01 | 49.9 | 67.7 |
-| Odia | 46.05 | 40.73 | 56.99 | 54.33 | 48.2 | 66.2 |
-| Punjabi | 47.11 | 52.44 | 53.66 | 56.02 | 50.6 | 63.4 |
-| Sanskrit | 36.82 | 34.23 | 45.59 | 41.76 | 38.8 | 54.8 |
-| Santali | 40.65 | 42.67 | 43.43 | 44.90 | 40.9 | 47.3 |
-| Sindhi | 39.47 | 37.03 | 50.26 | 45.81 | 39.1 | 57.3 |
-| Tamil | 47.43 | 37.91 | 50.23 | 41.65 | 50.9 | 59.8 |
-| Telugu | 49.42 | 42.64 | 53.87 | 47.24 | 52.4 | 64.8 |
-| Urdu | 62.61 | 56.33 | 60.99 | 58.29 | 68.2 | 73.0 |
+| Assamese | 44.74 | 44.58 | 56.02 | 55.39 | 46.40 | 65.13 |
+| Bengali | 47.24 | 45.01 | 54.39 | 53.75 | 49.47 | 62.04 |
+| Bodo | 49.30 | 46.39 | 52.34 | 49.18 | 48.81 | 60.81 |
+| Dogri | 55.86 | 50.64 | 61.04 | 58.29 | 58.26 | 71.97 |
+| Gujarati | 50.88 | 50.21 | 57.92 | 56.42 | 53.09 | 66.42 |
+| Hindi | 53.19 | 47.14 | 56.99 | 55.34 | 56.56 | 64.51 |
+| Kannada | 49.06 | 31.70 | 55.31 | 43.40 | 52.07 | 64.50 |
+| Kashmiri | 32.99 | 27.55 | 50.47 | 47.18 | 35.12 | 60.44 |
+| Konkani | 43.51 | 41.41 | 49.67 | 45.31 | 44.98 | 57.92 |
+| Maithili | 49.69 | 44.08 | 56.72 | 51.92 | 50.45 | 65.86 |
+| Malayalam | 44.83 | 38.19 | 53.35 | 48.49 | 47.69 | 63.98 |
+| Manipuri | 46.26 | 41.64 | 50.29 | 46.54 | 45.29 | 59.95 |
+| Marathi | 48.63 | 46.08 | 54.94 | 52.94 | 51.41 | 64.68 |
+| Nepali | 49.68 | 49.60 | 59.00 | 57.08 | 50.19 | 69.28 |
+| Odia | 46.23 | 40.87 | 57.14 | 54.57 | 48.11 | 65.88 |
+| Punjabi | 47.12 | 52.55 | 53.73 | 56.25 | 48.36 | 59.66 |
+| Sanskrit | 37.26 | 34.35 | 45.86 | 41.76 | 38.07 | 54.40 |
+| Santali | 41.11 | 42.99 | 43.72 | 45.11 | 40.87 | 47.61 |
+| Sindhi | 39.73 | 37.11 | 50.54 | 46.16 | 38.91 | 55.58 |
+| Tamil | 47.63 | 38.19 | 50.60 | 41.90 | 51.05 | 59.79 |
+| Telugu | 49.58 | 42.56 | 54.03 | 47.61 | 51.77 | 64.75 |
+| Urdu | 62.73 | 56.44 | 61.04 | 58.34 | 66.69 | 73.04 |
 
-- **en→xx is at or near the best published system in several low-resource languages.** On IN22-Gen en→xx the model
-  trails the best published card score by a median of 2.69 chrF++. It is above it for Sindhi (+0.37), Bodo (+0.25)
-  and Manipuri (+0.10), and within 1 for Santali (0.25), Nepali (0.37) and Maithili (0.93). The card scores are
-  sentence-level and greedy, so differences this small are not meaningful. The largest gaps are Kashmiri (7.31),
-  Malayalam (6.25) and Urdu (5.59).
-- **xx→en trails further,** by a median of 9.21 (Santali 3.87 is the smallest; Urdu 12.01 the largest). Every model of
-  ours trained on both mined and human data reaches 53.69 to 55.07 here (section 8), whatever the fine-tuning, so the
-  gap is not specific to this checkpoint.
-- **Weakest directions:** English to Kashmiri (32.89 Gen, 27.30 Conv), English to Sanskrit (36.82) and Santali to
-  English (43.43). Sanskrit is the second-weakest en→xx direction, but its gap to the best published system (1.98) is
-  below the median, so the evidence does not single out the 128k vocabulary.
-- **Conversational en→xx is uneven.** IN22-Conv is lower than IN22-Gen for most languages, by 17.26 for Kannada and
-  9.52 for Tamil, but higher for Punjabi (+5.33) and Santali (+2.02). The causes have not been examined.
+- **en→xx is at or above the best baseline in several low-resource languages.** On IN22-Gen en→xx the model trails
+  the best of the three baselines by a median of 2.00 chrF++. It is above it for Manipuri (+0.96), Sindhi (+0.82),
+  Bodo (+0.48) and Santali (+0.24), and within 1 for Nepali (0.51), Maithili (0.76) and Sanskrit (0.82). The largest
+  gaps are Urdu (3.95), Tamil (3.42) and Hindi (3.37).
+- **xx→en trails further,** by a median of 9.12 (Santali 3.90 is the smallest; Urdu 11.99 the largest). Every model of
+  ours trained on both mined and human data reaches 53.69 to 55.07 here (OpenNMT-py scores, section 8), whatever the
+  fine-tuning, so the gap is not specific to this checkpoint.
+- **Weakest directions:** English to Kashmiri (32.99 Gen, 27.55 Conv), English to Sanskrit (37.26) and Santali to
+  English (43.72). Sanskrit is the second-weakest en→xx direction, but its gap to the best baseline (0.82) is well below
+  the median, so the evidence does not single out the 128k vocabulary.
+- **Conversational en→xx is uneven.** IN22-Conv is lower than IN22-Gen for most languages, by 17.35 for Kannada and
+  9.45 for Tamil, but higher for Punjabi (+5.43) and Santali (+1.88). The causes have not been examined.
 
 ## 8. Pre-training, fine-tuning and architecture runs
 

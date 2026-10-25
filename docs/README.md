@@ -10,7 +10,7 @@ each directory (linked from the [top-level README](../README.md)).
 | [mixing.md](mixing.md) | Temperature-sampled mixing: the formula, why size is counted in words, the two mixtures, per-language results. |
 | [tokenizer.md](tokenizer.md) | The SentencePiece corpus, Zipf and Heaps analysis, the vocabulary-size sweep (why 128k), external tokenizers. |
 | [training.md](training.md) | The model, the three data arms, stopping by hand, checkpoint selection, the source-encoding fix (and the English-to-Indic decline it caused), fine-tuning, the architecture study. |
-| [evaluation.md](evaluation.md) | How scores are computed, the source-encoding fix, chrF++ and BLEU results, comparison with 12 published systems, IndicTrans2 under the same protocol, per-language results, fine-tuning and architecture results, the LLM judge. |
+| [evaluation.md](evaluation.md) | How scores are computed, the source-encoding fix, chrF++ and BLEU results, comparison with 12 systems (IndicTrans2, Indic Translate and Sarvam Translate run under the same protocol), per-language results, fine-tuning and architecture results, the LLM judge. |
 | [deployment.md](deployment.md) | CTranslate2 conversion, quantization (float32, int16, int8) with a significance test, the API and frontend, the container and the load test. |
 
 ## Conventions
