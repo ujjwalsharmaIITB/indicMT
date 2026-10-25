@@ -276,7 +276,7 @@ meaning there?) and **overall** from 1 to 5, at temperature 0 with seed 42. It r
 
 **Results.** Three systems were judged on the same sentences: the release model through CTranslate2 float32 (the
 reported model), the same checkpoint through OpenNMT-py, and IndicTrans2 1B (our run, section 6). Means and
-percentages are over every scored item; items the judge failed to score (at most 5 of 22,528 per system and variant)
+percentages are over every scored item; items the judge failed to score (at most 4 of 22,528 per system and variant)
 are excluded. "Mean ≥ 4" is the share of items whose mean of the three scores is at least 4.
 
 | System | Variant | Perfect 5/5/5 | Mean ≥ 4 | Fluency | Adequacy | Overall |
@@ -296,9 +296,9 @@ most items in Bodo, Dogri, Konkani, Maithili, Manipuri and Santali (by protocol 
 5), so the per-language scores for those languages should not be relied on; they lower all three systems alike. The judge results published before the source-encoding fix (section 2) are withdrawn.
 
 **Sanity checks of the judge itself.** A deliberately mismatched translation gets adequacy 1.00 (pass). The human
-reference itself, judged reference-free, gets overall 4.62 and a perfect 5/5/5 on about 79% of items. That is below
+reference itself, judged reference-free on IN22-Gen English→Indic (6,599 items), gets overall 4.53 and a perfect 5/5/5 on 73.0% of items. That is below
 the expected 4.7, because the judge flags real errors in the IN22 references (for example a tense error in an
 Assamese reference, and a Hindi reference that renders "dharmic action" as religious struggles). Santali (identity
-overall 3.88) and Manipuri (4.02) are unreliable for this judge.
+overall 3.50) and Manipuri (3.98) are unreliable for this judge.
 
 The judge's per-item outputs and summaries are written to `evaluation/llm_judge/results/` and are not tracked in git.

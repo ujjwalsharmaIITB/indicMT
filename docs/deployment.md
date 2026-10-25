@@ -91,7 +91,7 @@ threshold by 22, because 22 directions are tested at once.
 0.149 and 0.212. No direction survives Bonferroni correction, and the 1 to 4 directions per row under 0.05 are about
 what 22 tests at that threshold produce by chance (1.1 expected). Per-direction int8 deltas range from −0.125 to
 +0.164 (en→xx) and from −0.200 to +0.185 (xx→en). **int8 is the serving choice.** Compared with float32 it is 3.7 times
-smaller, with 6% lower p50 and 8% lower p95 latency and 42% higher batch throughput. int16 is the middle option at half
+smaller, with 6% lower p50 and 8% lower p95 latency and 44% higher batch throughput. int16 is the middle option at half
 the size, with the same throughput.
 
 ## 5. API and frontend

@@ -28,9 +28,9 @@ Run these before trusting any number (`--sanity`):
 
 - **Mismatch:** pair each source with another sentence's translation. Adequacy must be at most 2. Result: adequacy 1.00
   (pass).
-- **Identity:** judge the human reference itself, reference-free. Expected overall 4.7 or higher. Result: overall 4.62, a
-  perfect 5/5/5 on about 79% of items. It is below the expected value because the judge flags real errors in the IN22
-  references. Santali (identity overall 3.88) and Manipuri (4.02) are unreliable for this judge.
+- **Identity:** judge the human reference itself, reference-free. Expected overall 4.7 or higher. Result on IN22-Gen English→Indic (6,599 items): overall 4.53, a
+  perfect 5/5/5 on 73.0% of items. It is below the expected value because the judge flags real errors in the IN22
+  references. Santali (identity overall 3.50) and Manipuri (3.98) are unreliable for this judge.
 
 ## Results
 

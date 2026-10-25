@@ -46,7 +46,7 @@ bpcc-human text. Script: `tokenizer/analysis/scripts/corpus_laws.py`.
   justified outright.
 - **Heaps' law** describes how fast the number of distinct word forms grows with corpus size. Extrapolated to 10 times
   the current corpus, the union of all 23 languages has about **14.0 million** word forms. Any subword vocabulary
-  from 16k to 256k compresses that by 50 to 90 times.
+  from 16k to 256k compresses that by about 55 times (256k) to 875 times (16k).
 
 Vocabulary growth follows morphology:
 
@@ -107,10 +107,10 @@ On the same held-out text, we compared our tokenizers with published ones.
 | In-house 256k | 256k | 1.675 | Sanskrit 2.506 | |
 | Sarvam-30B | about 68k | 2.375 | Sanskrit 3.668 | |
 | IndicTrans2 (32k English + 128k Indic) | 160k total | 3.897 | Malayalam 10.745 | |
-| Gemma 3 | 262,144 | 3.268 | Manipuri 12.138 | |
-| Gemma 4 | 262,144 | 3.268 | Manipuri 12.138 | same vocabulary as Gemma 3 |
-| Sarvam-Translate (Gemma 3 fine-tune) | 262,144 | 3.268 | Manipuri 12.138 | identical tokenizer file |
-| Indic-Translate (Gemma 4 fine-tune) | 262,144 | 3.268 | Manipuri 12.138 | identical tokenizer file |
+| Gemma 3 | 262,144 | 3.268 | Manipuri 12.137 | |
+| Gemma 4 | 262,144 | 3.268 | Manipuri 12.137 | same vocabulary as Gemma 3 |
+| Sarvam-Translate (Gemma 3 fine-tune) | 262,144 | 3.268 | Manipuri 12.137 | identical tokenizer file |
+| Indic-Translate (Gemma 4 fine-tune) | 262,144 | 3.268 | Manipuri 12.137 | identical tokenizer file |
 
 ![Fertility per language, our tokenizers against external ones](../tokenizer/analysis/plots/fertility_external_per_language.png)
 
@@ -121,7 +121,7 @@ Our 128k tokenizer beats every external tokenizer compared, at less than half of
   vocabulary, however large. This matches Petrov et al. (2023).
 - **IndicTrans2:** nine languages above 5 (Malayalam 10.74, Tamil 9.32, Telugu 7.92, Kannada 7.57, Odia 7.16,
   Gujarati 6.13, Assamese 5.77, Bengali 5.56, Punjabi 5.10). The languages written in or near Devanagari all score
-  under 2. Its Indic vocabulary is built mostly around Devanagari.
+  under 2, except Sanskrit (2.63). Its Indic vocabulary is built mostly around Devanagari.
 - **Identical tokenizers:** we checked by file hash that the Gemma 3 and Sarvam-Translate tokenizer files match, and
   likewise Gemma 4 and Indic-Translate. The table has only three independent tokenizers, not six.
 

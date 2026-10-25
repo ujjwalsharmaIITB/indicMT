@@ -30,13 +30,14 @@ before publishing it. So we trust that upstream filtering. We still apply the ch
 
 | | bpcc-human | bpcc-mined |
 |---|---:|---:|
-| Raw sentence pairs | 3,433,146 | 106,097,276 |
-| After the script-consistency filter | see section 3 | 105,633,796 |
-| After exact-duplicate removal | (done at split time) | 105,347,857 |
+| Raw sentence pairs | 3,464,353 | 106,097,276 |
+| After the script-consistency filter | 3,455,085 | 105,633,796 |
+| After exact-duplicate removal | 3,455,085 (none removed) | 105,347,857 |
+| Training pairs (bpcc-human: after holding out the dev split) | 3,433,146 | 105,347,857 |
 | After bidirectional expansion (44 directions) | 6,866,292 | 210,695,714 |
 
 bpcc-human covers all 22 languages in `bpcc-seed-latest`. `ilci` covers 15 of the 22 (it lacks Dogri, Kashmiri,
-Maithili, Manipuri, Odia, Sanskrit, Sindhi and Santali).
+Maithili, Odia, Sanskrit, Sindhi and Santali).
 
 bpcc-mined has **no rows at all** for five languages: Dogri, Konkani, Manipuri, Santali and Sindhi. For these five,
 the human data is the only training source anywhere in the pipeline.
@@ -65,8 +66,8 @@ Every sentence pair goes through two checks before it can reach training.
 
 What the script check removed:
 
-- **bpcc-human:** between 0 and 2,783 rows per language. The largest losses were Sindhi (2,783 of about 49k raw
-  rows, 5.7%), Manipuri (2,576 of about 112k, 2.3%) and Malayalam (2,199 of about 185k, 1.2%). Most languages lost
+- **bpcc-human:** between 0 and 2,783 rows per language. The largest losses were Sindhi (2,783 of about 50k raw
+  rows, 5.6%), Manipuri (2,576 of about 112k, 2.3%) and Malayalam (2,199 of about 185k, 1.2%). Most languages lost
   fewer than 100 rows.
 - **bpcc-mined:** 463,480 of 106,097,276 raw rows (0.44%), concentrated in a few files. For example
   `ben_Beng_nllb-filtered` lost 112,267 rows and `hin_Deva_nllb-filtered` lost 59,257.
