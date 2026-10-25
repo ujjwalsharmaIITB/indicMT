@@ -10,7 +10,8 @@
 [![CTranslate2 4.8.2](https://img.shields.io/badge/CTranslate2-4.8.2-7C3AED.svg)](requirements-train.txt)
 [![Model on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20model-ujjwalsharmaIITB%2FindicMT-FFD21E.svg)](https://huggingface.co/ujjwalsharmaIITB/indicMT)
 [![Medium Blog](https://img.shields.io/badge/Medium-Blog-7C3AED?logo=medium&logoColor=white)](https://medium.com/@ujjwal.sharma.cs/multilingual-neural-machine-translation-from-theory-to-implementation-and-deployment-a1e14119e369)
-[![Technical Report](https://img.shields.io/badge/Technical-Report-EC4899?logo=readthedocs&logoColor=white)](http://cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT)
+[![Technical Report](https://img.shields.io/badge/Technical-Report-EC4899?logo=readthedocs&logoColor=white)](https://www.cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT/)
+[![Trailer](https://img.shields.io/badge/Trailer-Watch-A855F7?logo=googledrive&logoColor=white)](https://drive.google.com/file/d/1k-DSFMtJj0rGI8T_lkCtOW8Rb-tMsCnG/view?usp=drive_link)
 <br/>
 ![Languages: 23](https://img.shields.io/badge/languages-23-A855F7.svg)
 ![Directions: 44](https://img.shields.io/badge/directions-44-A855F7.svg)
@@ -338,7 +339,8 @@ By GPU type: 2,507 A100, 479 A40, 143 L40.
 
 | Resource | Link |
 |---|---|
-| Technical report | [Technical report](http://cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT) |
+| Technical report | [Technical report](https://www.cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT/) |
+| Trailer | [Watch the trailer](https://drive.google.com/file/d/1k-DSFMtJj0rGI8T_lkCtOW8Rb-tMsCnG/view?usp=drive_link) |
 | Medium blog | [Medium blog](https://medium.com/@ujjwal.sharma.cs/multilingual-neural-machine-translation-from-theory-to-implementation-and-deployment-a1e14119e369) |
 | Model weights | [huggingface.co/ujjwalsharmaIITB/indicMT](https://huggingface.co/ujjwalsharmaIITB/indicMT) |
 | IN22 translations of the release model | `<TRANSLATIONS_URL>` |
@@ -353,7 +355,7 @@ If you use IndicMT, please cite the technical report:
   title  = {{IndicMT}: Compact Multilingual Machine Translation for 22 Indian Languages},
   year   = {2026},
   note   = {Technical report},
-  url    = {http://cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT}
+  url    = {https://www.cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT/}
 }
 ```
 

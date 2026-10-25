@@ -101,7 +101,8 @@ model-index:
 <img src="https://img.shields.io/badge/CTranslate2-4.8.2-7C3AED" alt="CTranslate2 4.8.2" style="display:inline-block; margin:2px"/>
 <img src="https://img.shields.io/badge/OpenNMT--py-3.5.1-7C3AED" alt="OpenNMT-py 3.5.1" style="display:inline-block; margin:2px"/>
 <a href="https://medium.com/@ujjwal.sharma.cs/multilingual-neural-machine-translation-from-theory-to-implementation-and-deployment-a1e14119e369"><img src="https://img.shields.io/badge/Medium-Blog-7C3AED?logo=medium&logoColor=white" alt="Medium Blog" style="display:inline-block; margin:2px"/></a>
-<a href="http://cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT"><img src="https://img.shields.io/badge/Technical-Report-EC4899?logo=readthedocs&logoColor=white" alt="Technical Report" style="display:inline-block; margin:2px"/></a>
+<a href="https://www.cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT/"><img src="https://img.shields.io/badge/Technical-Report-EC4899?logo=readthedocs&logoColor=white" alt="Technical Report" style="display:inline-block; margin:2px"/></a>
+<a href="https://drive.google.com/file/d/1k-DSFMtJj0rGI8T_lkCtOW8Rb-tMsCnG/view?usp=drive_link"><img src="https://img.shields.io/badge/Trailer-Watch-A855F7?logo=googledrive&logoColor=white" alt="Trailer" style="display:inline-block; margin:2px"/></a>
 </div>
 <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:4px; margin:6px 0">
 <img src="https://img.shields.io/badge/languages-23-A855F7" alt="Languages: 23" style="display:inline-block; margin:2px"/>
@@ -140,7 +141,7 @@ repository holds the OpenNMT-py training checkpoint and an int8 CTranslate2 conv
   16 heads, **153,807,872 parameters**, one shared 128k SentencePiece (unigram) vocabulary with tied embeddings.
 - **Training:** from scratch with OpenNMT-py 3.5.1 on AI4Bharat's BPCC. Pre-trained on an 8:2 mix of mined and
   human-translated data (step 13,600), then fine-tuned on human data only (step 1,800).
-- **Code, data pipeline, evaluation and serving:** [github.com/ujjwalsharmaIITB/indicMT](https://github.com/ujjwalsharmaIITB/indicMT). **Technical report:** [Technical report](http://cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT). **Blog:** [Medium blog](https://medium.com/@ujjwal.sharma.cs/multilingual-neural-machine-translation-from-theory-to-implementation-and-deployment-a1e14119e369).
+- **Code, data pipeline, evaluation and serving:** [github.com/ujjwalsharmaIITB/indicMT](https://github.com/ujjwalsharmaIITB/indicMT). **Technical report:** [Technical report](https://www.cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT/). **Blog:** [Medium blog](https://medium.com/@ujjwal.sharma.cs/multilingual-neural-machine-translation-from-theory-to-implementation-and-deployment-a1e14119e369). **Trailer:** [watch on Google Drive](https://drive.google.com/file/d/1k-DSFMtJj0rGI8T_lkCtOW8Rb-tMsCnG/view?usp=drive_link).
 
 <h2 id="files" style="color:#7C3AED">Files</h2>
 
@@ -413,7 +414,7 @@ By GPU type: 2,507 A100, 479 A40, 143 L40.
   title  = {{IndicMT}: Compact Multilingual Machine Translation for 22 Indian Languages},
   year   = {2026},
   note   = {Technical report},
-  url    = {http://cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT}
+  url    = {https://www.cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT/}
 }
 ```
 

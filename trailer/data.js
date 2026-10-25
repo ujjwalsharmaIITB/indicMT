@@ -327,7 +327,7 @@ window.TRAILER_DATA = {
  },
  "links": {
   "blog": "https://medium.com/@ujjwal.sharma.cs/multilingual-neural-machine-translation-from-theory-to-implementation-and-deployment-a1e14119e369",
-  "report": "http://cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT",
+  "report": "https://www.cse.iitb.ac.in/~ujjwalsharma/blogs/indicMT/",
   "code": "https://github.com/ujjwalsharmaIITB/indicMT",
   "weights": "https://huggingface.co/ujjwalsharmaIITB/indicMT",
   "display": {
